@@ -9,7 +9,7 @@ import FinancialTracking from "../cliniclayout/FinancialTracking";
 import DepartmentManagement from "../cliniclayout/DepartmentManagement";
 import DoctorLayout from "../DoctorLayout/DoctorLayout";
 import DoctorOverview from "../DoctorLayout/overview/DoctorOverview";
- 
+
 import DoctorAppointment from "../DoctorLayout/appointments/DoctorAppointment";
 import PatientList from "../DoctorLayout/patientlist/PatientList";
 import PatientDetails from "../DoctorLayout/patientlist/PatientDetails";
@@ -23,118 +23,157 @@ import AllCall from "../DoctorLayout/telemedicine/AllCall";
 import Earning from "../DoctorLayout/earning/Earning";
 import Profile from "../DoctorLayout/profile/Profile";
 import DoctorAvailability from "../DoctorLayout/availability/DoctorAvailability";
+import PatientLayout from "../patientLayout/PatientLayout";
+import PatientOverview from "../patientLayout/patientoverview/PatientOverview";
+import PatientAppointment from "../patientLayout/appointment/PatientAppointment";
+import PatientReport from "../patientLayout/reports/PatientReport";
+import PatientPrescription from "../patientLayout/patientPrescription/PatientPrescription";
+import PatientPrescripitonDetails from "../patientLayout/patientPrescription/PatientPrescripitonDetails";
+import PatientProfile from "../patientLayout/profile/PatientProfile";
+import BookAppointment from "../PublicPage/BookAppointment/BookAppointment";
 
-export const router = createBrowserRouter([{
-    path:'/',
-    element:<ParenLayout/>,
-    children:([
-        {
-            path:'/',
-            element:<HomePage/>
-        },
-    ]),
-    
-},
-{
-    path: '/clinic',
+export const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <ParenLayout />,
+    children: [
+      {
+        path: "/",
+        element: <HomePage />,
+      },
+      {
+        path: "appointment",
+        element: <BookAppointment />,
+      },
+    ],
+  },
+  {
+    path: "/clinic",
     element: <ClinicLayout />, // এই লেআউটে সাইডবার এবং টপবার থাকবে
     children: [
       {
-        index: true, 
-        element: <Navigate to="overview" replace /> // /clinic এ গেলে অটোমেটিক ওভারভিউতে নিয়ে যাবে
+        index: true,
+        element: <Navigate to="overview" replace />, // /clinic এ গেলে অটোমেটিক ওভারভিউতে নিয়ে যাবে
       },
       {
-        path: 'overview', // ১. Overview Statistics
-        element: <ClinicOverview />
+        path: "overview", // ১. Overview Statistics
+        element: <ClinicOverview />,
       },
       {
-        path: 'doctors', // ২. Doctor Management
-        element: <DoctorManagement />
+        path: "doctors", // ২. Doctor Management
+        element: <DoctorManagement />,
       },
       {
-        path: 'appointments', // ৩. Appointment Monitoring
-        element: <AppointmentMonitor />
+        path: "appointments", // ৩. Appointment Monitoring
+        element: <AppointmentMonitor />,
       },
       {
-        path: 'finance', // ৪. Financial Tracking
-        element: <FinancialTracking />
+        path: "finance", // ৪. Financial Tracking
+        element: <FinancialTracking />,
       },
       {
-        path: 'departments', // ৫. Department Management
-        element: <DepartmentManagement />
-      }
-    ]
+        path: "departments", // ৫. Department Management
+        element: <DepartmentManagement />,
+      },
+    ],
   },
 
   {
-    path:'/dashboard/doctor',
-    element:<DoctorLayout/>,
-    children:[
+    path: "/dashboard/doctor",
+    element: <DoctorLayout />,
+    children: [
       {
-        index:true,
-        element:<Navigate to="overview" replace></Navigate>
+        index: true,
+        element: <Navigate to="overview" replace></Navigate>,
       },
       {
-        path:'overview',
-        element:<DoctorOverview/>
+        path: "overview",
+        element: <DoctorOverview />,
       },
       {
-        path:'availability',
-        element:<DoctorAvailability/>//offdays, slots, 
+        path: "availability",
+        element: <DoctorAvailability />, //offdays, slots,
       },
 
       {
-        path:'appointments',
-        element:<DoctorAppointment/>
+        path: "appointments",
+        element: <DoctorAppointment />,
       },
       {
-        path:'patients',
-        element:<PatientList/> //done
+        path: "patients",
+        element: <PatientList />, //done
       },
       {
-        path:'emr/:id',
-        element:<PatientDetails/> //done
+        path: "emr/:id",
+        element: <PatientDetails />, //done
       },
       {
-        path:'allreport',
-        element:<AllReports/>
+        path: "allreport",
+        element: <AllReports />,
       },
       {
-        path:'reports/:patientid',
-        element:<ReportList/>//done
+        path: "reports/:patientid",
+        element: <ReportList />, //done
       },
       {
-        path:'patient/reports/:reportid',
-        element:<ReportDetails/> //done
+        path: "patient/reports/:reportid",
+        element: <ReportDetails />, //done
       },
       {
-        path:'prescriptions/:id',
-        element:<AllPrescription/> //done
+        path: "prescriptions/:id",
+        element: <AllPrescription />, //done
       },
       {
-        path:'prescription/create/:patientid', //done
-        element:<CreatePrescription/>
+        path: "prescription/create/:patientid", //done
+        element: <CreatePrescription />,
       },
       {
-        path:'prescription/:id', //done
-        element:<PrescriptionDetails/>
+        path: "prescription/:id", //done
+        element: <PrescriptionDetails />,
       },
       {
-        path:'telemedicine',
-        element:<AllCall/>
+        path: "telemedicine",
+        element: <AllCall />,
       },
       {
-        path:'earning',
-        element:<Earning/>
+        path: "earning",
+        element: <Earning />,
       },
       {
-        path:'profile',
-        element:<Profile/>
-      }
-    ]
-  }
+        path: "profile",
+        element: <Profile />,
+      },
+    ],
+  },
 
-
-
-
-])
+  {
+    path: "/dashboard/patient",
+    element: <PatientLayout />,
+    children: [
+      {
+        index: true,
+        element: <PatientOverview />,
+      },
+      {
+        path: "appointments",
+        element: <PatientAppointment />,
+      },
+      {
+        path: "report",
+        element: <PatientReport />,
+      },
+      {
+        path: "prescription",
+        element: <PatientPrescription />,
+      },
+      {
+        path: "prescription/:id",
+        element: <PatientPrescripitonDetails />,
+      },
+      {
+        path: "profile",
+        element: <PatientProfile />,
+      },
+    ],
+  },
+]);
