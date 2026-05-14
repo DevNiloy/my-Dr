@@ -1,6 +1,10 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import ParenLayout from "../layout/ParenLayout";
 import HomePage from "../PublicPage/Home/HomePage";
+import Login from "../PublicPage/Auth/Login";
+import Register from "../PublicPage/Auth/Register";
+import ProtectedRoute from "../shared_components/ProtectedRoute";
+
 import ClinicLayout from "../cliniclayout/ClinicLayout";
 import ClinicOverview from "../cliniclayout/ClinicOverview";
 import DoctorManagement from "../cliniclayout/DoctorManagement";
@@ -37,143 +41,86 @@ export const router = createBrowserRouter([
     path: "/",
     element: <ParenLayout />,
     children: [
-      {
-        path: "/",
-        element: <HomePage />,
-      },
-      {
-        path: "appointment",
-        element: <BookAppointment />,
-      },
+      { path: "/", element: <HomePage /> },
+      { path: "appointment", element: <BookAppointment /> },
     ],
   },
   {
-    path: "/clinic",
-    element: <ClinicLayout />, // এই লেআউটে সাইডবার এবং টপবার থাকবে
-    children: [
-      {
-        index: true,
-        element: <Navigate to="overview" replace />, // /clinic এ গেলে অটোমেটিক ওভারভিউতে নিয়ে যাবে
-      },
-      {
-        path: "overview", // ১. Overview Statistics
-        element: <ClinicOverview />,
-      },
-      {
-        path: "doctors", // ২. Doctor Management
-        element: <DoctorManagement />,
-      },
-      {
-        path: "appointments", // ৩. Appointment Monitoring
-        element: <AppointmentMonitor />,
-      },
-      {
-        path: "finance", // ৪. Financial Tracking
-        element: <FinancialTracking />,
-      },
-      {
-        path: "departments", // ৫. Department Management
-        element: <DepartmentManagement />,
-      },
-    ],
+    path: "/login",
+    element: <Login />
+  },
+  {
+    path: "/register",
+    element: <Register />
+  },
+  {
+    path: "/unauthorized",
+    element: <div className="min-h-screen flex items-center justify-center font-black text-slate-400 text-3xl">403 Unauthorized</div>
   },
 
+  // PROTECTED CLINIC ADMIN ROUTES
   {
-    path: "/dashboard/doctor",
-    element: <DoctorLayout />,
+    element: <ProtectedRoute allowedRoles={["CLINIC_ADMIN"]} />,
     children: [
       {
-        index: true,
-        element: <Navigate to="overview" replace></Navigate>,
-      },
-      {
-        path: "overview",
-        element: <DoctorOverview />,
-      },
-      {
-        path: "availability",
-        element: <DoctorAvailability />, //offdays, slots,
-      },
-
-      {
-        path: "appointments",
-        element: <DoctorAppointment />,
-      },
-      {
-        path: "patients",
-        element: <PatientList />, //done
-      },
-      {
-        path: "emr/:id",
-        element: <PatientDetails />, //done
-      },
-      {
-        path: "allreport",
-        element: <AllReports />,
-      },
-      {
-        path: "reports/:patientid",
-        element: <ReportList />, //done
-      },
-      {
-        path: "patient/reports/:reportid",
-        element: <ReportDetails />, //done
-      },
-      {
-        path: "prescriptions/:id",
-        element: <AllPrescription />, //done
-      },
-      {
-        path: "prescription/create/:patientid", //done
-        element: <CreatePrescription />,
-      },
-      {
-        path: "prescription/:id", //done
-        element: <PrescriptionDetails />,
-      },
-      {
-        path: "telemedicine",
-        element: <AllCall />,
-      },
-      {
-        path: "earning",
-        element: <Earning />,
-      },
-      {
-        path: "profile",
-        element: <Profile />,
-      },
-    ],
+        path: "/clinic",
+        element: <ClinicLayout />,
+        children: [
+          { index: true, element: <Navigate to="overview" replace /> },
+          { path: "overview", element: <ClinicOverview /> },
+          { path: "doctors", element: <DoctorManagement /> },
+          { path: "appointments", element: <AppointmentMonitor /> },
+          { path: "finance", element: <FinancialTracking /> },
+          { path: "departments", element: <DepartmentManagement /> },
+        ],
+      }
+    ]
   },
 
+  // PROTECTED DOCTOR ROUTES
   {
-    path: "/dashboard/patient",
-    element: <PatientLayout />,
+    element: <ProtectedRoute allowedRoles={["DOCTOR"]} />,
     children: [
       {
-        index: true,
-        element: <PatientOverview />,
-      },
+        path: "/dashboard/doctor",
+        element: <DoctorLayout />,
+        children: [
+          { index: true, element: <Navigate to="overview" replace /> },
+          { path: "overview", element: <DoctorOverview /> },
+          { path: "availability", element: <DoctorAvailability /> },
+          { path: "appointments", element: <DoctorAppointment /> },
+          { path: "patients", element: <PatientList /> },
+          { path: "emr/:id", element: <PatientDetails /> },
+          { path: "allreport", element: <AllReports /> },
+          { path: "reports/:patientid", element: <ReportList /> },
+          { path: "patient/reports/:reportid", element: <ReportDetails /> },
+          { path: "prescriptions/:id", element: <AllPrescription /> },
+          { path: "prescription/create/:patientid", element: <CreatePrescription /> },
+          { path: "prescription/:id", element: <PrescriptionDetails /> },
+          { path: "telemedicine", element: <AllCall /> },
+          { path: "earning", element: <Earning /> },
+          { path: "profile", element: <Profile /> },
+        ],
+      }
+    ]
+  },
+
+  // PROTECTED PATIENT ROUTES
+  {
+    element: <ProtectedRoute allowedRoles={["PATIENT"]} />,
+    children: [
       {
-        path: "appointments",
-        element: <PatientAppointment />,
-      },
-      {
-        path: "report",
-        element: <PatientReport />,
-      },
-      {
-        path: "prescription",
-        element: <PatientPrescription />,
-      },
-      {
-        path: "prescription/:id",
-        element: <PatientPrescripitonDetails />,
-      },
-      {
-        path: "profile",
-        element: <PatientProfile />,
-      },
-    ],
+        path: "/dashboard/patient",
+        element: <PatientLayout />,
+        children: [
+          { index: true, element: <PatientOverview /> },
+          { path: "appointments", element: <PatientAppointment /> },
+          { path: "report", element: <PatientReport /> },
+          { path: "prescription", element: <PatientPrescription /> },
+          { path: "prescription/:id", element: <PatientPrescripitonDetails /> },
+          { path: "profile", element: <PatientProfile /> },
+        ],
+      }
+    ]
   },
 ]);

@@ -1,14 +1,19 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
 // ডক্টরের শিডিউল ইন্টারফেস
+export interface DaySchedule {
+  day: string;
+  isActive: boolean;
+  startTime: string;
+  endTime: string;
+}
+
 export interface DoctorSchedule {
-  doctorId: string
-  workingDays: string[]       // e.g., ["Sun", "Mon", "Tue"]
-  startTime: string           // e.g., "10:00"
-  endTime: string             // e.g., "17:00"
-  slotDuration: number        // e.g., 15 / 20 / 30 mins
-  maxAppointmentsPerDay: number
-  offDays: string[]           // e.g., ["2026-05-10"]
+  doctorId: string;
+  weeklySchedule: DaySchedule[];
+  slotDuration: number;
+  maxAppointmentsPerDay: number;
+  offDays: string[];
 }
 
 interface ScheduleState {

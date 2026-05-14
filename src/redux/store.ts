@@ -1,21 +1,22 @@
 import { configureStore } from "@reduxjs/toolkit";
-// import { baseApi } from "./api/baseApi";
-import patientReducer from '../redux/feature/patient/patientSlice'
-import presciptionReducer from '../redux/feature/patient/prescriptionSlice'
-import scheduleReducer from '../redux/feature/doctor/scheduleSlice'
-import appointmentReducer from '../redux/feature/doctor/appointmentSlice'
+import { baseApi } from "./api/baseApi";
+import authReducer from "./feature/auth/authSlice";
+import patientReducer from '../redux/feature/patient/patientSlice';
+import presciptionReducer from '../redux/feature/patient/prescriptionSlice';
+import scheduleReducer from '../redux/feature/doctor/scheduleSlice';
+import appointmentReducer from '../redux/feature/doctor/appointmentSlice';
 
 export const store = configureStore({
   reducer: {
-    // [baseApi.reducerPath]: baseApi.reducer,
-    patients:patientReducer,
-    prescriptions:presciptionReducer,
-    schedule:scheduleReducer,
-    appointments:appointmentReducer
-   
+    [baseApi.reducerPath]: baseApi.reducer,
+    auth: authReducer,
+    patients: patientReducer,
+    prescriptions: presciptionReducer,
+    schedule: scheduleReducer,
+    appointments: appointmentReducer
   },
-//   middleware: (getDefaultMiddleware) =>
-//     getDefaultMiddleware().concat(baseApi.middleware),
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(baseApi.middleware),
 });
 
 // Infer the `RootState` and `AppDispatch` types from the store itself
