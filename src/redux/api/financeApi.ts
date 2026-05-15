@@ -10,9 +10,25 @@ export const financeApi = baseApi.injectEndpoints({
       },
       providesTags: ['Finances'],
     }),
+    getClinicAnalytics: builder.query({
+      query: () => ({
+        url: '/finances/analytics',
+        method: 'GET',
+      }),
+      providesTags: ['Finances', 'Appointments', 'Doctors'],
+    }),
+    getMyEarnings: builder.query({
+      query: () => ({
+        url: '/finances/my-earnings',
+        method: 'GET',
+      }),
+      providesTags: ['Finances'],
+    }),
   }),
 });
 
 export const {
   useGetFinancesQuery,
+  useGetClinicAnalyticsQuery,
+  useGetMyEarningsQuery,
 } = financeApi;

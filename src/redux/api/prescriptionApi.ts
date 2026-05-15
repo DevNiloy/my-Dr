@@ -12,11 +12,15 @@ export const prescriptionApi = baseApi.injectEndpoints({
     }),
     getPrescriptionById: builder.query({
       query: (id: string) => ({ url: `/prescriptions/${id}`, method: 'GET' }),
-      providesTags: (result, error, id) => [{ type: 'Prescriptions', id }],
+      providesTags: (_result, _error, id) => [{ type: 'Prescriptions', id }],
     }),
     createPrescription: builder.mutation({
       query: (body) => ({ url: '/prescriptions', method: 'POST', body }),
       invalidatesTags: ['Prescriptions'],
+    }),
+    getPatientPrescriptions: builder.query({
+      query: (patientId: string) => ({ url: `/prescriptions/patient/${patientId}`, method: 'GET' }),
+      providesTags: ['Prescriptions'],
     }),
   }),
 });
@@ -25,4 +29,5 @@ export const {
   useGetPrescriptionsQuery,
   useGetPrescriptionByIdQuery,
   useCreatePrescriptionMutation,
+  useGetPatientPrescriptionsQuery,
 } = prescriptionApi;

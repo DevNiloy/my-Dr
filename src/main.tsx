@@ -9,12 +9,15 @@ import { store } from './redux/store.ts'
 
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { SocketProvider } from './context/SocketProvider'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
    <Provider store={store}>
-    <RouterProvider router={router}></RouterProvider>
-    <ToastContainer position="bottom-right" theme="colored" autoClose={3000} />
+     <SocketProvider>
+       <RouterProvider router={router}></RouterProvider>
+       <ToastContainer position="bottom-right" theme="light" autoClose={3000} />
+     </SocketProvider>
    </Provider>
   </StrictMode>,
 )

@@ -1,228 +1,330 @@
-import { CalendarDays, Search, Video } from "lucide-react";
-
-const doctors = [
-  {
-    id: 1,
-    name: "Dr. John Smith",
-    specialization: "Cardiologist",
-    slots: [
-      {
-        day: "Mon",
-        date: "05/11/26",
-        times: ["11:15"],
-      },
-      {
-        day: "Tue",
-        date: "05/12/26",
-        times: [],
-      },
-      {
-        day: "Wed",
-        date: "05/13/26",
-        times: [],
-      },
-      {
-        day: "Thu",
-        date: "05/14/26",
-        times: [],
-      },
-      {
-        day: "Fri",
-        date: "05/15/26",
-        times: [],
-      },
-    ],
-  },
-
-  {
-    id: 2,
-    name: "Dr. Sarah Wilson",
-    specialization: "Neurologist",
-    slots: [
-      {
-        day: "Mon",
-        date: "06/29/26",
-        times: [],
-      },
-      {
-        day: "Tue",
-        date: "06/30/26",
-        times: ["10:00", "10:30", "11:00"],
-      },
-      {
-        day: "Wed",
-        date: "07/01/26",
-        times: ["14:00", "14:15", "14:30"],
-      },
-      {
-        day: "Thu",
-        date: "07/02/26",
-        times: [],
-      },
-      {
-        day: "Fri",
-        date: "07/03/26",
-        times: ["10:00", "10:30", "11:00"],
-      },
-    ],
-  },
-];
+import { useState, useMemo } from "react";
+import {
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Calendar,
+  CreditCard,
+  Stethoscope,
+  Lock
+} from "lucide-react";
+import { useGetAppointmentsQuery, useCreateAppointmentMutation } from "../../redux/api/appointmentApi";
+import { useGetPatientMeQuery } from "../../redux/api/patientApi";
+import { useGetDoctorsQuery } from "../../redux/api/doctorApi";
+import { useCreateCheckoutSessionMutation } from "../../redux/api/paymentApi";
+import { toast } from "react-toastify";
+import dayjs from "dayjs";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAppSelector } from "../../redux/hooks";
 
 export default function BookAppointment() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { token } = useAppSelector((state) => state.auth);
+
+  // If unauthenticated, they can still view doctors, but let's prompt login
+  const { data: patientData } = useGetPatientMeQuery({}, { skip: !token });
+  const patientId = patientData?.data?._id;
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const { data: doctorData } = useGetDoctorsQuery({ search: searchTerm });
+
+  const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
+  const [appointmentDate, setAppointmentDate] = useState("");
+  const [timeSlot, setTimeSlot] = useState("");
+  const [symptoms, setSymptoms] = useState("");
+  const [consultationType, setConsultationType] = useState<"IN_PERSON" | "TELEMEDICINE">("IN_PERSON");
+
+  const { data: bookedData, isFetching: isCheckingBooked } = useGetAppointmentsQuery(
+    { doctorId: selectedDoctor?._id, date: appointmentDate },
+    { skip: !selectedDoctor || !appointmentDate }
+  );
+
+  const [createCheckout, { isLoading: isRedirecting }] = useCreateCheckoutSessionMutation();
+
+  const doctors = doctorData?.data || [];
+  const bookedSlots = bookedData?.data?.map((a: any) => a.timeSlot) || [];
+
+  const doctorDayInfo = useMemo(() => {
+    if (!selectedDoctor || !appointmentDate) return null;
+    const dayOfWeek = dayjs(appointmentDate).format('dddd');
+    return selectedDoctor.availability?.weeklySchedule?.find(
+      (s: any) => s.day === dayOfWeek
+    );
+  }, [selectedDoctor, appointmentDate]);
+
+  const availableSlots = useMemo(() => {
+    if (!doctorDayInfo || !doctorDayInfo.isActive) return [];
+    const isOffDay = selectedDoctor.availability?.offDays?.includes(appointmentDate);
+    if (isOffDay) return [];
+
+    const slots = [];
+    let current = dayjs(`2000-01-01 ${doctorDayInfo.startTime}`);
+    const end = dayjs(`2000-01-01 ${doctorDayInfo.endTime}`);
+    const duration = selectedDoctor.availability?.slotDurationMinutes || 30;
+
+    while (current.isBefore(end) || current.isSame(end)) {
+      const slotTime = current.format("HH:mm");
+      if (!bookedSlots.includes(slotTime)) {
+        slots.push(slotTime);
+      }
+      current = current.add(duration, "minute");
+    }
+    return slots;
+  }, [doctorDayInfo, bookedSlots, appointmentDate, selectedDoctor]);
+
+  const handleBooking = async () => {
+    if (!token || !patientId) {
+      toast.info("Please login to complete your booking.");
+      navigate("/login", { state: { from: location } });
+      return;
+    }
+
+    if (!selectedDoctor || !appointmentDate || !timeSlot) {
+      toast.error("Please fill all required selections.");
+      return;
+    }
+
+    if (!selectedDoctor.isStripeConnected) {
+      toast.error("This doctor hasn't connected Stripe yet. Booking is currently unavailable.");
+      return;
+    }
+
+    try {
+      const payload = {
+        doctorId: selectedDoctor._id,
+        patientId,
+        appointmentDate,
+        timeSlot,
+        type: consultationType,
+        symptoms
+      };
+
+      toast.info("Preparing checkout...", { autoClose: 1500 });
+      const checkoutRes = await createCheckout(payload).unwrap();
+
+      if (checkoutRes.success && checkoutRes.url) {
+        window.location.href = checkoutRes.url;
+      }
+    } catch (err: any) {
+      toast.error(err.data?.message || "Booking failed. Please try again.");
+    }
+  };
+
   return (
-    <div className="space-y-8 container mx-auto py-10">
-      {/* TOP FILTER */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-3xl p-6 lg:p-8 shadow-lg">
-        <div className="grid lg:grid-cols-4 gap-4">
-          {/* SPECIALIST */}
-          <div>
-            <label className="text-white text-sm mb-2 block">
-              Specialist / Doctor
-            </label>
+    <div className="container mx-auto px-4 py-12 max-w-7xl">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-700">
 
-            <input
-              type="text"
-              placeholder="Cardiologist"
-              className="w-full h-14 rounded-2xl px-4 outline-none bg-white"
-            />
-          </div>
-
-          {/* CITY */}
-          <div>
-            <label className="text-white text-sm mb-2 block">City</label>
-
-            <input
-              type="text"
-              placeholder="e-Visit"
-              className="w-full h-14 rounded-2xl px-4 outline-none bg-blue-400/30 text-white placeholder:text-blue-100"
-            />
-          </div>
-
-          {/* DATE */}
-          <div>
-            <label className="text-white text-sm mb-2 block">Date</label>
-
-            <div className="relative">
-              <input
-                type="date"
-                className="w-full h-14 rounded-2xl px-4 outline-none bg-white"
-              />
-
-              <CalendarDays
-                className="absolute right-4 top-4 text-gray-500"
-                size={20}
-              />
-            </div>
-          </div>
-
-          {/* BUTTON */}
-          <div className="flex items-end">
-            <button className="w-full h-14 rounded-2xl bg-pink-500 hover:bg-pink-600 transition text-white font-semibold flex items-center justify-center gap-2 shadow-lg">
-              <Search size={18} />
-              SEARCH
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* TITLE */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-800">
-          Available Appointments
-        </h1>
-
-        <p className="text-gray-500 mt-1">Book your appointment instantly</p>
-      </div>
-
-      {/* CONTENT */}
-      <div className="grid xl:grid-cols-[1fr_320px] gap-6">
-        {/* LEFT */}
-        <div className="space-y-6">
-          {doctors.map((doctor) => (
-            <div
-              key={doctor.id}
-              className="bg-white border rounded-3xl overflow-hidden shadow-sm"
-            >
-              {/* HEADER */}
-              <div className="p-6 flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center text-3xl">
-                  👨‍⚕️
+        <div className="lg:col-span-12">
+          {!token && (
+            <div className="mb-8 p-6 bg-amber-50 border border-amber-200 rounded-[2rem] flex items-center justify-between gap-4 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center">
+                  <Lock size={20} />
                 </div>
-
                 <div>
-                  <h2 className="text-xl font-bold text-blue-600">
-                    {doctor.name}
-                  </h2>
+                  <h3 className="font-bold text-amber-900 tracking-tight text-lg">You are browsing as a guest</h3>
+                  <p className="text-amber-700 text-sm font-medium">To complete an appointment booking, you'll need to sign into your patient account.</p>
+                </div>
+              </div>
+              <button onClick={() => navigate("/login")} className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-black rounded-xl transition-colors shadow-lg shadow-amber-200">
+                Sign In
+              </button>
+            </div>
+          )}
 
-                  <p className="text-gray-500">{doctor.specialization}</p>
+          <div className="bg-white p-8 lg:p-10 rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/40 space-y-10 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-600 to-indigo-600" />
+
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div>
+                <h2 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                  <Stethoscope size={28} className="text-blue-500" /> Specialist Directory
+                </h2>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Select a doctor to view their schedule</p>
+              </div>
+              <input
+                type="text"
+                placeholder="Search specialists..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="w-full md:w-[350px] p-5 bg-slate-50 border-none rounded-[2rem] font-bold text-slate-700 placeholder:text-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {doctors.map((doctor: any) => (
+                <div
+                  key={doctor._id}
+                  onClick={() => setSelectedDoctor(doctor)}
+                  className={`p-6 rounded-[2.5rem] border-2 cursor-pointer transition-all duration-300 group flex flex-col gap-4 ${selectedDoctor?._id === doctor._id
+                    ? "border-blue-500 bg-blue-50/50 shadow-xl shadow-blue-100/30"
+                    : "border-slate-50 hover:border-blue-200 hover:bg-slate-50"
+                    }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="w-16 h-16 bg-white rounded-3xl flex items-center justify-center text-3xl shadow-sm group-hover:scale-110 transition-transform">👨‍⚕️</div>
+                    {selectedDoctor?._id === doctor._id && <div className="p-2 bg-blue-600 text-white rounded-full"><CheckCircle2 size={12} /></div>}
+                  </div>
+                  <div>
+                    <h4 className="font-black text-slate-800 tracking-tighter text-lg leading-tight">{doctor.firstName} {doctor.lastName}</h4>
+                    <p className="text-[10px] font-black uppercase text-blue-500 tracking-widest mt-1">{doctor.specialization}</p>
+                  </div>
+
+                  <div className={`mt-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${doctor.isStripeConnected ? 'text-emerald-500' : 'text-slate-300'}`}>
+                    <CreditCard size={12} /> {doctor.isStripeConnected ? 'Payments Enabled' : 'Payments (Offline)'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {selectedDoctor && (
+          <div className="lg:col-span-12 grid grid-cols-1 lg:grid-cols-4 gap-8 animate-in slide-in-from-top-4 duration-1000">
+
+            {/* WEEKLY SCHEDULE PANEL */}
+            <div className="lg:col-span-1 bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/20 space-y-6">
+              <h3 className="text-lg font-black text-slate-800 flex items-center gap-3">
+                <Calendar size={20} className="text-indigo-500" /> Weekly Hours
+              </h3>
+              <div className="space-y-3">
+                {selectedDoctor.availability?.weeklySchedule?.map((s: any) => (
+                  <div key={s.day} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${s.isActive ? 'bg-slate-50 border-slate-100' : 'bg-rose-50 border-rose-100 opacity-50'}`}>
+                    <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">{s.day}</span>
+                    <span className={`text-[10px] font-bold ${s.isActive ? 'text-blue-600' : 'text-rose-400'}`}>
+                      {s.isActive ? `${s.startTime}-${s.endTime}` : 'CLOSED'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Off Days List */}
+              {selectedDoctor.availability?.offDays?.length > 0 && (
+                <div className="pt-4 border-t border-slate-100 space-y-3">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Public Holidays / Closures</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedDoctor.availability.offDays.map((d: string) => (
+                      <span key={d} className="px-3 py-1 bg-rose-100 text-rose-600 rounded-lg text-[9px] font-black tracking-tighter">{d}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* BOOKING DETAILS */}
+            <div className="lg:col-span-2 bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/40 space-y-10 focus-within:border-blue-400 transition-colors">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block">Pick Date</label>
+                  <input
+                    type="date"
+                    min={dayjs().format('YYYY-MM-DD')}
+                    value={appointmentDate}
+                    onChange={e => { setAppointmentDate(e.target.value); setTimeSlot(""); }}
+                    className="w-full p-5 bg-slate-50 border-none rounded-2xl font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 shadow-inner"
+                  />
+                </div>
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block flex items-center justify-between">
+                    Select Time {isCheckingBooked && <Loader2 size={12} className="animate-spin text-blue-500" />}
+                  </label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {availableSlots.length > 0 ? (
+                      availableSlots.map((slot: string) => (
+                        <button
+                          key={slot}
+                          onClick={() => setTimeSlot(slot)}
+                          className={`py-3 rounded-xl font-black text-[10px] transition-all ${timeSlot === slot ? "bg-blue-600 text-white shadow-lg" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
+                        >
+                          {slot}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="col-span-full p-6 border-2 border-dashed border-slate-100 rounded-3xl text-center text-[10px] font-black text-slate-300 uppercase tracking-widest">
+                        {appointmentDate ? "No slots available" : "Select date first"}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* SCHEDULE */}
-              <div className="border-t bg-gray-50 overflow-x-auto">
-                <div className="min-w-[800px] grid grid-cols-5">
-                  {doctor.slots.map((slot, index) => (
-                    <div key={index} className="border-r last:border-r-0">
-                      {/* DAY */}
-                      <div className="bg-slate-100 p-3 text-center border-b">
-                        <p className="font-medium text-gray-700">{slot.day}</p>
-
-                        <p className="text-sm text-gray-500">{slot.date}</p>
-                      </div>
-
-                      {/* TIMES */}
-                      <div className="p-3 min-h-[170px] flex flex-col gap-2">
-                        {slot.times.length === 0 ? (
-                          <div className="flex items-center justify-center h-full text-sm text-gray-400">
-                            No visits
-                          </div>
-                        ) : (
-                          slot.times.map((time, i) => (
-                            <button
-                              key={i}
-                              className="border rounded-full py-2 text-sm hover:bg-blue-500 hover:text-white transition"
-                            >
-                              {time}
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  ))}
+              {/* Consultation Type Selector */}
+              <div className="space-y-4">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block">Consultation Type</label>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setConsultationType("IN_PERSON")}
+                    type="button"
+                    className={`flex-1 flex items-center justify-center gap-3 p-5 rounded-[1.5rem] font-bold transition-all border-2 ${consultationType === "IN_PERSON" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md" : "border-slate-50 bg-slate-50 text-slate-500 hover:border-slate-200"}`}
+                  >
+                    <div className={`w-3 h-3 rounded-full ${consultationType === "IN_PERSON" ? "bg-blue-500" : "bg-slate-300"}`} />
+                    In-Person Visit
+                  </button>
+                  <button
+                    onClick={() => setConsultationType("TELEMEDICINE")}
+                    type="button"
+                    className={`flex-1 flex items-center justify-center gap-3 p-5 rounded-[1.5rem] font-bold transition-all border-2 ${consultationType === "TELEMEDICINE" ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md" : "border-slate-50 bg-slate-50 text-slate-500 hover:border-slate-200"}`}
+                  >
+                    <div className={`w-3 h-3 rounded-full ${consultationType === "TELEMEDICINE" ? "bg-blue-500" : "bg-slate-300"}`} />
+                    Telemedicine (Video Call)
+                  </button>
                 </div>
+              </div>
+
+              <textarea
+                rows={4}
+                value={symptoms}
+                onChange={e => setSymptoms(e.target.value)}
+                placeholder="Briefly describe your symptoms..."
+                className="w-full p-6 bg-slate-50 border-none rounded-[2rem] font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 resize-none shadow-inner outline-none"
+              />
+            </div>
+
+            {/* PAYMENT SUMMARY */}
+            <div className="lg:col-span-1 flex flex-col gap-6">
+              <div className="bg-slate-900 rounded-[3rem] p-8 text-white flex flex-col justify-between shadow-2xl relative overflow-hidden grow">
+                <div className="absolute top-0 right-0 p-16 -mr-12 -mt-12 bg-white/5 rounded-full blur-xl" />
+
+                <div className="space-y-8">
+                  <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em]">Checkout Summary</h4>
+
+                  <SummarySmall label="Doctor" value={`${selectedDoctor.firstName} ${selectedDoctor.lastName}`} />
+                  <SummarySmall label="Schedule" value={appointmentDate && timeSlot ? `${dayjs(appointmentDate).format('DD MMM')}, ${timeSlot}` : '--'} />
+
+                  <div className="bg-white/5 p-5 rounded-2xl border border-white/5 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Total Fee</span>
+                      <span className="text-xl font-black tracking-tight">${selectedDoctor.consultationFee}</span>
+                    </div>
+                    {!selectedDoctor.isStripeConnected && (
+                      <div className="flex items-center gap-2 text-rose-400 text-[9px] font-bold">
+                        <AlertCircle size={10} /> Stripe disconnected
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleBooking}
+                  disabled={isRedirecting || !timeSlot || !selectedDoctor.isStripeConnected}
+                  className="w-full py-5 bg-white text-slate-900 rounded-[1.5rem] font-black shadow-xl hover:bg-blue-500 hover:text-white transition-all transform active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 mt-8 z-10"
+                >
+                  {isRedirecting ? <Loader2 className="animate-spin" size={18} /> : <CreditCard size={18} />}
+                  {!token ? 'Sign-in to Book' : isRedirecting ? 'Stripe Pay...' : 'Pay & Confirm'}
+                </button>
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* RIGHT SIDEBAR */}
-        <div className="bg-purple-900 text-white rounded-3xl p-6 h-fit sticky top-5">
-          <div className="flex items-center gap-3 mb-5">
-            <Video size={26} />
-
-            <h2 className="text-2xl font-bold">Telemedicine</h2>
           </div>
-
-          <ul className="space-y-4 text-sm leading-7">
-            <li>• Consult with doctors online</li>
-
-            <li>• Get prescriptions instantly</li>
-
-            <li>• Video call support</li>
-
-            <li>• Upload medical reports</li>
-
-            <li>• Follow-up consultation</li>
-
-            <li>• Secure & private system</li>
-          </ul>
-
-          <div className="mt-8 pt-5 border-t border-purple-700 text-xs text-purple-200 leading-6">
-            Online consultations help patients connect with doctors quickly and
-            securely from anywhere.
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
 }
+
+const SummarySmall = ({ label, value }: any) => (
+  <div className="space-y-1">
+    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{label}</p>
+    <p className="font-bold text-sm tracking-tight">{value}</p>
+  </div>
+);

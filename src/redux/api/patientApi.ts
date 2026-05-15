@@ -14,6 +14,21 @@ export const patientApi = baseApi.injectEndpoints({
       query: () => ({ url: '/patients/me', method: 'GET' }),
       providesTags: ['Patients'],
     }),
+    updatePatient: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `/patients/${id}`,
+        method: 'PATCH',
+        body: data,
+      }),
+      invalidatesTags: ['Patients', { type: 'Patients', id: 'me' }],
+    }),
+    getPatientDashboardStats: builder.query({
+      query: () => ({
+        url: '/patients/dashboard-stats',
+        method: 'GET',
+      }),
+      providesTags: ['Appointments', 'Prescriptions', 'Reports'],
+    }),
   }),
 });
 
@@ -21,4 +36,6 @@ export const {
   useGetPatientsQuery,
   useGetPatientByIdQuery,
   useGetPatientMeQuery,
+  useUpdatePatientMutation,
+  useGetPatientDashboardStatsQuery,
 } = patientApi;

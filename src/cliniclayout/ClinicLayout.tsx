@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, 
   UserRound, 
@@ -10,11 +10,22 @@ import {
   Menu, 
   X, 
   Bell,
-  Search
+  Search,
+  User as UserIcon
 } from "lucide-react";
+import { useGetMeQuery } from "../redux/api/userApi";
+import NotificationDropdown from "../components/NotificationDropdown";
 
 const ClinicLayout: React.FC = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+  const { data: userData } = useGetMeQuery({});
+  const user = userData?.data;
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
 
   const menuItems = [
     { icon: <LayoutDashboard size={20} />, label: "Overview", path: "/clinic/overview" },
@@ -25,30 +36,30 @@ const ClinicLayout: React.FC = () => {
   ];
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
+    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden font-sans">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <aside className={`
-        fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 
-        transform transition-transform duration-300 ease-in-out
+        fixed lg:relative inset-y-0 left-0 z-[70] w-72 bg-white border-r border-slate-200 
+        transform transition-transform duration-300 ease-in-out flex flex-col
         ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}>
-        <div className="h-full flex flex-col">
+        <div className="flex-1 flex flex-col h-full">
           {/* Logo Section */}
-          <div className="p-8 flex items-center justify-between">
+          <div className="p-8 flex items-center justify-between border-b border-slate-50">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#0EA5E9] rounded-xl flex items-center justify-center text-white shadow-lg shadow-sky-100">
-                <Building2 size={24} />
+              <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-xl shadow-slate-200">
+                <Building2 size={22} />
               </div>
-              <span className="text-xl font-bold tracking-tight text-slate-800">
-                Care<span className="text-[#0EA5E9]">Sync</span>
+              <span className="text-xl font-black tracking-tight text-slate-800 uppercase italic">
+                Care<span className="text-blue-600">Sync</span>
               </span>
             </div>
             <button className="lg:hidden text-slate-400" onClick={() => setSidebarOpen(false)}>
@@ -57,90 +68,89 @@ const ClinicLayout: React.FC = () => {
           </div>
 
           {/* Navigation Items */}
-          <nav className="flex-1 px-4 space-y-1.5">
+          <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto custom-scrollbar">
             {menuItems.map((item) => (
               <NavLink
                 key={item.label}
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
                 className={({ isActive }) => `
-                  flex items-center gap-4 px-4 py-3.5 rounded-2xl font-semibold transition-all duration-200
+                  flex items-center gap-4 px-4 py-3.5 rounded-2xl font-bold transition-all duration-200 text-sm
                   ${isActive 
-                    ? "bg-sky-50 text-[#0EA5E9] shadow-sm shadow-sky-50" 
+                    ? "bg-slate-900 text-white shadow-lg shadow-slate-200" 
                     : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"}
                 `}
               >
                 {item.icon}
-                <span className="text-sm">{item.label}</span>
+                <span>{item.label}</span>
               </NavLink>
             ))}
           </nav>
 
           {/* Footer/Logout Area */}
-          <div className="p-6 border-t border-slate-100">
-            <div className="bg-slate-50 rounded-2xl p-4 mb-4">
+          <div className="p-6 border-t border-slate-100 bg-slate-50/50">
+            <div className="bg-white border border-slate-100 rounded-2xl p-4 mb-4 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-sky-100 border-2 border-white shadow-sm flex items-center justify-center text-[#0EA5E9] font-bold">
-                  A
+                <div className="w-10 h-10 rounded-xl bg-slate-900 border-2 border-white shadow-md flex items-center justify-center text-white font-black text-xs">
+                  {user?.role?.slice(0, 2).toUpperCase() || "AD"}
                 </div>
                 <div className="overflow-hidden">
-                  <p className="text-xs font-bold text-slate-800 truncate">Admin Terminal</p>
-                  <p className="text-[10px] text-slate-400 font-medium">super-admin@caresync.com</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Administrator</p>
+                  <p className="text-xs font-bold text-slate-800 truncate">{user?.email}</p>
                 </div>
               </div>
             </div>
-            <button className="w-full flex items-center gap-4 px-4 py-3.5 text-rose-500 font-bold hover:bg-rose-50 rounded-2xl transition-all">
-              <LogOut size={20} />
-              <span className="text-sm">Log Out</span>
+            <button 
+              onClick={handleLogout}
+              className="w-full flex items-center gap-4 px-4 py-4 text-rose-500 font-bold hover:bg-rose-100 rounded-2xl transition-all text-sm group"
+            >
+              <LogOut size={20} className="group-hover:-translate-x-1 transition-transform text-rose-400" />
+              <span>Sign Out Hub</span>
             </button>
           </div>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        {/* Top Header */}
-        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-10 shrink-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full">
+        {/* Top Header - Fixed */}
+        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-6 lg:px-10 shrink-0 sticky top-0 z-40 bg-white/80 backdrop-blur-md">
           <div className="flex items-center gap-4">
             <button 
-              className="p-2 lg:hidden text-slate-600 hover:bg-slate-50 rounded-xl"
+              className="p-2 lg:hidden text-slate-600 hover:bg-slate-50 rounded-xl border border-slate-100"
               onClick={() => setSidebarOpen(true)}
             >
               <Menu size={24} />
             </button>
-            <div className="hidden md:flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100 w-80">
-              <Search size={18} className="text-slate-400" />
+            <div className="hidden md:flex items-center gap-3 bg-slate-50 px-4 py-2.5 rounded-2xl border border-slate-100 w-96 group focus-within:ring-2 focus-within:ring-slate-900/5 focus-within:bg-white transition-all shadow-inner">
+              <Search size={18} className="text-slate-400 group-focus-within:text-slate-900" />
               <input 
                 type="text" 
-                placeholder="Search anything..." 
-                className="bg-transparent border-none text-sm focus:ring-0 placeholder:text-slate-400 w-full"
+                placeholder="Search analytics, doctors, sessions..." 
+                className="bg-transparent border-none text-xs font-bold focus:ring-0 placeholder:text-slate-400 w-full"
               />
             </div>
           </div>
 
           <div className="flex items-center gap-3 lg:gap-6">
-            {/* Notification */}
-            <button className="p-2.5 text-slate-400 hover:text-[#0EA5E9] hover:bg-sky-50 rounded-xl transition-all relative">
-              <Bell size={20} />
-              <span className="absolute top-2 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span>
-            </button>
+            <NotificationDropdown />
 
             {/* Quick Actions (Desktop only) */}
-            <div className="hidden sm:flex items-center gap-3 pl-6 border-l border-slate-200">
+            <div className="hidden sm:flex items-center gap-4 pl-6 border-l border-slate-200">
               <div className="text-right">
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Global Account</p>
-                <p className="text-sm font-bold text-slate-800 italic">Clinic Central</p>
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none">Security Node</p>
+                <p className="text-xs font-bold text-slate-800 italic mt-1 leading-none">{user?.role}</p>
               </div>
-              <div className="w-10 h-10 bg-slate-800 rounded-xl shadow-lg flex items-center justify-center text-white font-black text-xs">
-                CC
+              <div className="w-11 h-11 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center justify-center text-slate-400 font-black transition-all hover:bg-slate-50 select-none">
+                 <UserIcon size={20} />
               </div>
             </div>
           </div>
         </header>
 
         {/* Scrollable Content Container */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-10 scroll-smooth">
-          <div className="max-w-7xl mx-auto h-full">
+        <main className="flex-1 overflow-y-auto p-6 lg:p-10 scroll-smooth bg-[#FBFDFF]">
+          <div className="max-w-[1600px] mx-auto min-h-full">
             <Outlet />
           </div>
         </main>

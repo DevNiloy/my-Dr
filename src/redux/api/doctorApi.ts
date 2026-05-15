@@ -66,6 +66,23 @@ export const doctorApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Doctors'],
     }),
+    getMyPatients: builder.query({
+      query: (params: any) => {
+        const search = params?.search || "";
+        return {
+          url: `/doctors/my-patients?search=${search}`,
+          method: 'GET',
+        };
+      },
+      providesTags: ['Patients'],
+    }),
+    getDoctorDashboardStats: builder.query({
+      query: () => ({
+        url: '/doctors/dashboard-stats',
+        method: 'GET',
+      }),
+      providesTags: ['Appointments', 'Patients', 'Prescriptions'],
+    }),
   }),
 });
 
@@ -78,4 +95,6 @@ export const {
   useUpdateDoctorAvailabilityMutation,
   useGetDoctorMeQuery,
   useUpdateDoctorMeMutation,
+  useGetMyPatientsQuery,
+  useGetDoctorDashboardStatsQuery,
 } = doctorApi;

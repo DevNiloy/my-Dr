@@ -9,8 +9,9 @@ export const paymentApi = baseApi.injectEndpoints({
     getStripeDashboardLink: builder.query({
       query: () => ({ url: "/payments/dashboard-link", method: "GET" }),
     }),
+// 
     createCheckoutSession: builder.mutation({
-      query: (body: { appointmentId: string }) => ({
+      query: (body: any) => ({
         url: "/payments/create-checkout-session",
         method: "POST",
         body,

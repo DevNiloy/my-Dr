@@ -1,28 +1,50 @@
-import { baseApi } from './baseApi';
+import { baseApi } from "./baseApi";
 
 export const reportApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getReports: builder.query({
-      query: (params: { patientId?: string } = {}) => {
-        const qs = new URLSearchParams();
-        if (params.patientId) qs.set('patientId', params.patientId);
-        return { url: `/reports?${qs.toString()}`, method: 'GET' };
+      query: (params) => {
+        const queryParams = new URLSearchParams();
+        if (params?.page) queryParams.append("page", params.page.toString());
+        if (params?.limit) queryParams.append("limit", params.limit.toString());
+        if (params?.patientId) queryParams.append("patientId", params.patientId);
+
+        return {
+          url: `/reports?${queryParams.toString()}`,
+          method: "GET",
+        };
       },
-      providesTags: ['Reports'],
-    }),
-    getReportById: builder.query({
-      query: (id: string) => ({ url: `/reports/${id}`, method: 'GET' }),
-      providesTags: (result, error, id) => [{ type: 'Reports', id }],
+      providesTags: ["Reports"],
     }),
     createReport: builder.mutation({
-      query: (body) => ({ url: '/reports', method: 'POST', body }),
-      invalidatesTags: ['Reports'],
+      query: (formData: FormData) => ({
+        url: "/reports",
+        method: "POST",
+        body: formData,
+      }),
+      invalidatesTags: ["Reports"],
+    }),
+    updateReport: builder.mutation({
+      query: ({ id, formData }: { id: string; formData: FormData }) => ({
+        url: `/reports/${id}`,
+        method: "PATCH",
+        body: formData,
+      }),
+      invalidatesTags: ["Reports"],
+    }),
+    deleteReport: builder.mutation({
+      query: (id: string) => ({
+        url: `/reports/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Reports"],
     }),
   }),
 });
 
 export const {
   useGetReportsQuery,
-  useGetReportByIdQuery,
   useCreateReportMutation,
+  useUpdateReportMutation,
+  useDeleteReportMutation,
 } = reportApi;
