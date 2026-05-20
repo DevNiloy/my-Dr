@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { 
-  Building2, Plus, Users, ArrowRight, 
+  Building2, Plus, Users, 
    Edit2, Trash2, Search, Activity, Eye, X, Loader2
 } from "lucide-react";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import { 
   useGetDepartmentsQuery, 
   useAddDepartmentMutation, 
   useUpdateDepartmentMutation, 
   useDeleteDepartmentMutation 
 } from "../redux/api/departmentApi";
-import { useGetDoctorsQuery } from "../redux/api/doctorApi";
+// import { useGetDoctorsQuery } from "../redux/api/doctorApi";
 import Pagination from "../shared_components/Pagination";
 
 const DepartmentManagement: React.FC = () => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedDept, setSelectedDept] = useState<any>(null);
@@ -41,19 +41,19 @@ const DepartmentManagement: React.FC = () => {
   }, [searchQuery]);
 
   // RTK Queries & Mutations
-  const { data: deptData, isLoading, isError, refetch: refetchDepts } = useGetDepartmentsQuery({ 
+  const { data: deptData, isLoading, refetch: refetchDepts } = useGetDepartmentsQuery({ 
     search: debouncedSearch, 
     page: currentPage, 
     limit: 6 
   });
-  const { data: doctorRes } = useGetDoctorsQuery({ limit: 100 });
+  // const { data: doctorRes } = useGetDoctorsQuery({ limit: 100 });
   const [addDept, { isLoading: isAdding }] = useAddDepartmentMutation();
   const [updateDept, { isLoading: isUpdating }] = useUpdateDepartmentMutation();
   const [deleteDept] = useDeleteDepartmentMutation();
 
   const departments = deptData?.data || [];
   const meta = deptData?.meta || { totalPages: 1 };
-  const doctors = doctorRes?.data || [];
+  // const doctors = doctorRes?.data || [];
 
   // Re-fetch when showAddModal closes or on specific events if tag invalidation is flaky
   useEffect(() => {

@@ -16,8 +16,8 @@ import {
   Settings2,
   ListRestart,
   CreditCard,
-  ExternalLink,
-  ChevronRight,
+  // ExternalLink,
+  // ChevronRight,
 } from "lucide-react";
 import {
   useGetDoctorMeQuery,
@@ -51,7 +51,7 @@ export default function DoctorAvailability() {
     useCreateStripeAccountMutation();
 
   const isStripeConnected = doctorData?.data?.isStripeConnected;
-  const stripeAccountId = doctorData?.data?.stripeAccountId;
+  // const stripeAccountId = doctorData?.data?.stripeAccountId;
 
   // 2. Local state for form management
   const [slotDuration, setSlotDuration] = useState(30);

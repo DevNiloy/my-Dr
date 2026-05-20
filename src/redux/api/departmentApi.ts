@@ -18,7 +18,7 @@ export const departmentApi = baseApi.injectEndpoints({
         url: `/departments/${id}`,
         method: 'GET',
       }),
-      providesTags: (result, error, id) => [{ type: 'Departments', id }],
+      providesTags: (id) => [{ type: 'Departments', id }],
     }),
     addDepartment: builder.mutation({
       query: (newDepartment) => ({
