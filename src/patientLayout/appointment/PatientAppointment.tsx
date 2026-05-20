@@ -5,17 +5,20 @@ import {
   Calendar,
   Video,
   ShieldCheck,
-  ShieldAlert
+  FileText
 } from "lucide-react";
 import { useGetAppointmentsQuery } from "../../redux/api/appointmentApi";
 import { useGetPatientMeQuery } from "../../redux/api/patientApi";
 import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import ViewPrescriptionModal from "../../shared_components/ViewPrescriptionModal";
 
 export default function PatientAppointment() {
   const navigate = useNavigate();
   const { data: patientData, isLoading: isPatientLoading } = useGetPatientMeQuery({});
   const patientId = patientData?.data?._id;
+  const [isRxModalOpen, setIsRxModalOpen] = useState(false);
 
   const { data: appointmentData, isLoading: isAppLoading } = useGetAppointmentsQuery(
     { patientId },
@@ -45,13 +48,23 @@ export default function PatientAppointment() {
             <p className="text-sm text-slate-500 font-medium mt-1">View your medical appointments and history.</p>
          </div>
 
-         <button
-           onClick={() => navigate('/appointment')}
-           className="relative z-10 flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-[1.5rem] font-black shadow-2xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-1 active:scale-95 transition-all text-sm"
-         >
-           <Calendar size={18} />
-           <span>New Appointment</span>
-         </button>
+         <div className="relative z-10 flex flex-wrap gap-4">
+            <button
+               onClick={() => setIsRxModalOpen(true)}
+               disabled={!patientId}
+               className="flex items-center justify-center gap-3 px-8 py-4 bg-emerald-50 text-emerald-600 rounded-[1.5rem] font-black border border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all text-sm disabled:opacity-50"
+            >
+               <FileText size={18} />
+               <span>My Prescriptions</span>
+            </button>
+            <button
+               onClick={() => navigate('/appointment')}
+               className="flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-[1.5rem] font-black shadow-2xl shadow-blue-200 hover:bg-blue-700 hover:-translate-y-1 active:scale-95 transition-all text-sm"
+            >
+               <Calendar size={18} />
+               <span>New Appointment</span>
+            </button>
+         </div>
       </div>
 
       {/* LIST VIEW */}
@@ -84,16 +97,12 @@ export default function PatientAppointment() {
                     
                     {/* Status Badges */}
                     <div className="flex flex-wrap gap-2 mt-3">
-                       <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.1em] border flex items-center gap-1.5 ${
-                          app.adminApprovalStatus === "APPROVED" ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                          app.adminApprovalStatus === "REJECTED" ? "bg-rose-50 text-rose-600 border-rose-100" :
-                          "bg-amber-50 text-amber-600 border-amber-100"
-                       }`}>
-                          {app.adminApprovalStatus === "APPROVED" ? <ShieldCheck size={12}/> : <ShieldAlert size={12}/>}
-                          Admin: {app.adminApprovalStatus || 'Pending'}
+                        <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.1em] border flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border-emerald-100`}>
+                          <ShieldCheck size={12}/>
+                          Verified
                        </span>
 
-                       {app.type === "TELEMEDICINE" && app.adminApprovalStatus === "APPROVED" && app.meetLink && (
+                       {app.type === "TELEMEDICINE" && app.meetLink && (
                           <a 
                              href={app.meetLink} 
                              target="_blank" 
@@ -127,6 +136,14 @@ export default function PatientAppointment() {
           ))
         )}
       </div>
+
+      {isRxModalOpen && patientId && (
+        <ViewPrescriptionModal 
+          isOpen={isRxModalOpen}
+          onClose={() => setIsRxModalOpen(false)}
+          patientId={patientId}
+        />
+      )}
     </div>
   );
 }

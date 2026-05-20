@@ -1,22 +1,24 @@
 import React, { useState } from "react";
 import {
   Calendar, Clock, Monitor, MapPin, Search,
-  CheckCircle2, XCircle, Filter, Loader2,
-  ShieldAlert, ShieldCheck, ShieldX, Wallet
+  Filter, Loader2,
+  ShieldAlert, ShieldCheck, ShieldX, Wallet, FileText
 } from "lucide-react";
-import Swal from "sweetalert2";
-import { toast } from "react-toastify";
 import {
-  useGetAppointmentsQuery,
-  useUpdateAdminApprovalStatusMutation
+  useGetAppointmentsQuery
 } from "../redux/api/appointmentApi";
 import dayjs from "dayjs";
+import PrescriptionModal from "./PrescriptionModal";
+import ViewPrescriptionModal from "../shared_components/ViewPrescriptionModal";
 
 const AppointmentMonitor: React.FC = () => {
   const [filterType, setFilterType] = useState<string>("All");
   const [activeTab, setActiveTab] = useState<string>("ALL");
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
+  const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
+  const [isViewPrescriptionModalOpen, setIsViewPrescriptionModalOpen] = useState(false);
+  const [selectedAppointmentData, setSelectedAppointmentData] = useState<any>(null);
   const limit = 10;
 
   // Map filter dropdown to backend enum
@@ -24,7 +26,7 @@ const AppointmentMonitor: React.FC = () => {
   if (filterType === "Online") apiTypeParam = "TELEMEDICINE";
   if (filterType === "Stationary") apiTypeParam = "IN_PERSON";
 
-  const { data, isLoading, refetch } = useGetAppointmentsQuery({
+  const { data, isLoading } = useGetAppointmentsQuery({
     status: activeTab !== "ALL" ? activeTab : undefined,
     type: apiTypeParam,
     search: searchInput || undefined,
@@ -32,39 +34,24 @@ const AppointmentMonitor: React.FC = () => {
     limit,
   });
 
-  const [updateAdminApproval] = useUpdateAdminApprovalStatusMutation();
-
   const appointments = data?.data || [];
   const totalPages = data?.pages || 1;
 
-  const handleAdminApproval = async (id: string, status: "APPROVED" | "REJECTED") => {
-    const isApproved = status === "APPROVED";
-    const result = await Swal.fire({
-      title: isApproved ? "Approve Appointment?" : "Reject Appointment?",
-      text: isApproved
-        ? "This will mark it as securely verified."
-        : "The patient will be notified of the rejection.",
-      icon: isApproved ? "question" : "warning",
-      showCancelButton: true,
-      confirmButtonColor: isApproved ? "#10b981" : "#f43f5e",
-      cancelButtonColor: "#64748b",
-      confirmButtonText: isApproved ? "Yes, Approve!" : "Yes, Reject!",
+  const handleOpenPrescriptionModal = (app: any) => {
+    setSelectedAppointmentData({
+      _id: app._id,
+      patientId: app.patient?._id,
+      doctorId: app.doctor?._id,
+      patientName: `${app.patient?.firstName || ""} ${app.patient?.lastName || ""}`.trim(),
+      doctorName: `${app.doctor?.firstName || ""} ${app.doctor?.lastName || ""}`.trim()
     });
+    setIsPrescriptionModalOpen(true);
+  };
 
-    if (!result.isConfirmed) return;
-
-    try {
-      await updateAdminApproval({ id, adminApprovalStatus: status }).unwrap();
-      Swal.fire({
-        title: "Done!",
-        text: `Appointment has been ${isApproved ? "approved" : "rejected"}.`,
-        icon: "success",
-        timer: 1500,
-        showConfirmButton: false,
-      });
-      refetch();
-    } catch (err: any) {
-      toast.error(err.data?.message || "Failed to update status");
+  const handleClosePrescriptionModal = (showPreview?: boolean) => {
+    setIsPrescriptionModalOpen(false);
+    if (showPreview) {
+      setIsViewPrescriptionModalOpen(true);
     }
   };
 
@@ -83,7 +70,7 @@ const AppointmentMonitor: React.FC = () => {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
           <h1 className="text-2xl lg:text-3xl font-black text-slate-800 tracking-tight">Appointment Monitor</h1>
-          <p className="text-sm text-slate-500 font-medium mt-1">Live tracking and administrative approvals.</p>
+          <p className="text-sm text-slate-500 font-medium mt-1">Live tracking and appointment history.</p>
         </div>
 
         <div className="flex items-center gap-1.5 p-1.5 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto flex-shrink-0">
@@ -152,10 +139,10 @@ const AppointmentMonitor: React.FC = () => {
                   <th className="px-6 py-5">Doctor</th>
                   <th className="px-6 py-5">Visit Type</th>
                   <th className="px-6 py-5">Schedule</th>
-                  <th className="px-6 py-5">Payment</th>
-                  <th className="px-6 py-5">Approval</th>
+                  <th className="px-6 py-5">Status</th>
                   <th className="px-6 py-5">Fee / 20%</th>
-                  <th className="px-6 py-5 text-center">Actions</th>
+                  <th className="px-6 py-5">Verification</th>
+                  <th className="px-6 py-5 text-center">Rx</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -209,19 +196,33 @@ const AppointmentMonitor: React.FC = () => {
                             </span>
                           </div>
                         </td>
-                        {/* Payment Status */}
+                         {/* Status Column */}
                         <td className="px-6 py-5">
-                          <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase px-2.5 py-1 rounded-xl ${isPaid
-                            ? "bg-emerald-50 text-emerald-600"
-                            : app.paymentStatus === "FAILED"
-                              ? "bg-rose-50 text-rose-600"
-                              : "bg-amber-50 text-amber-600"
-                            }`}>
-                            <Wallet size={11} />
-                            {app.paymentStatus || "PENDING"}
-                          </span>
+                          <div className="flex flex-col gap-1.5">
+                             <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase px-2.5 py-1 rounded-xl ${isPaid
+                                ? "bg-emerald-50 text-emerald-600"
+                                : app.paymentStatus === "FAILED"
+                                  ? "bg-rose-50 text-rose-600"
+                                  : "bg-amber-50 text-amber-600"
+                                }`}>
+                                <Wallet size={11} />
+                                {app.paymentStatus || "PENDING"}
+                              </span>
+                              <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase px-2.5 py-1 rounded-xl bg-slate-100 text-slate-500`}>
+                                {app.status}
+                              </span>
+                          </div>
                         </td>
-                        {/* Admin Approval Status */}
+                        {/* Fee & Commission */}
+                        <td className="px-6 py-5">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-black text-slate-800">${commission}</span>
+                            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest italic mt-0.5">
+                              Fee: ${fee}
+                            </span>
+                          </div>
+                        </td>
+                        {/* Admin Verification (View Only) */}
                         <td className="px-6 py-5">
                           <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase px-2.5 py-1 rounded-xl ${isAdminApproved
                             ? "bg-emerald-50 text-emerald-600"
@@ -235,39 +236,15 @@ const AppointmentMonitor: React.FC = () => {
                             {app.adminApprovalStatus || "PENDING"}
                           </span>
                         </td>
-                        {/* Fee & Commission */}
+                        {/* Prescription Action */}
                         <td className="px-6 py-5">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-black text-slate-800">${commission}</span>
-                            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest italic mt-0.5">
-                              Fee: ${fee}
-                            </span>
-                          </div>
-                        </td>
-                        {/* Action Buttons */}
-                        <td className="px-6 py-5">
-                          <div className="flex justify-center items-center gap-2">
+                          <div className="flex justify-center">
                             <button
-                              onClick={() => handleAdminApproval(app._id, "APPROVED")}
-                              disabled={isAdminApproved}
-                              className={`p-2 rounded-xl transition-all ${isAdminApproved
-                                ? "bg-slate-100 text-slate-300 cursor-not-allowed"
-                                : "text-emerald-500 bg-emerald-50 hover:bg-emerald-100"
-                                }`}
-                              title="Approve Booking"
+                               onClick={() => handleOpenPrescriptionModal(app)}
+                               className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm hover:shadow-md"
+                               title="Issue Prescription"
                             >
-                              <CheckCircle2 size={17} />
-                            </button>
-                            <button
-                              onClick={() => handleAdminApproval(app._id, "REJECTED")}
-                              disabled={isAdminRejected}
-                              className={`p-2 rounded-xl transition-all ${isAdminRejected
-                                ? "bg-slate-100 text-slate-300 cursor-not-allowed"
-                                : "text-rose-500 bg-rose-50 hover:bg-rose-100"
-                                }`}
-                              title="Reject Booking"
-                            >
-                              <XCircle size={17} />
+                               <FileText size={16} />
                             </button>
                           </div>
                         </td>
@@ -291,6 +268,23 @@ const AppointmentMonitor: React.FC = () => {
           </div>
         )}
       </div>
+
+      {isPrescriptionModalOpen && selectedAppointmentData && (
+        <PrescriptionModal 
+          isOpen={isPrescriptionModalOpen}
+          onClose={handleClosePrescriptionModal}
+          appointmentData={selectedAppointmentData}
+        />
+      )}
+
+      {isViewPrescriptionModalOpen && selectedAppointmentData && (
+        <ViewPrescriptionModal 
+          isOpen={isViewPrescriptionModalOpen}
+          onClose={() => setIsViewPrescriptionModalOpen(false)}
+          patientId={selectedAppointmentData.patientId}
+          showDownload={false}
+        />
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (

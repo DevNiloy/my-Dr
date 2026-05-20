@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { FileText, Upload, ImageIcon, Eye, Trash2, Edit, Loader2, X, File as FileIcon } from "lucide-react";
+import { FileText, Upload, ImageIcon, Eye, Trash2, Edit, Loader2, X, File as FileIcon, Share2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { 
   useGetReportsQuery, 
@@ -237,6 +237,18 @@ const handleDelete = async (id: string) => {
                       className="bg-rose-50 hover:bg-rose-100 text-rose-600 px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all font-bold text-sm disabled:opacity-50"
                     >
                       {deletingId === report._id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        const shareUrl = `${window.location.origin}/report/${report._id}`;
+                        navigator.clipboard.writeText(shareUrl);
+                        toast.success("Link copied!");
+                      }}
+                      className="bg-emerald-50 hover:bg-emerald-100 text-emerald-600 px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all font-bold text-sm"
+                      title="Share Report"
+                    >
+                      <Share2 size={16} />
                     </button>
 
                     <a

@@ -1,21 +1,26 @@
 import { useState, useMemo } from "react";
-import {
-  CheckCircle2,
-  AlertCircle,
-  Loader2,
-  Calendar,
-  CreditCard,
-  Stethoscope,
-  Lock
+import { 
+  CheckCircle2, 
+  AlertCircle, 
+  Loader2, 
+  Calendar, 
+  CreditCard, 
+  Stethoscope, 
+  Lock,
+  Search,
+  X,
+  // Filter
 } from "lucide-react";
-import { useGetAppointmentsQuery, useCreateAppointmentMutation } from "../../redux/api/appointmentApi";
+import { useGetAppointmentsQuery } from "../../redux/api/appointmentApi";
 import { useGetPatientMeQuery } from "../../redux/api/patientApi";
 import { useGetDoctorsQuery } from "../../redux/api/doctorApi";
+import { useGetDepartmentsQuery } from "../../redux/api/departmentApi";
 import { useCreateCheckoutSessionMutation } from "../../redux/api/paymentApi";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAppSelector } from "../../redux/hooks";
+import { useEffect } from "react";
 
 export default function BookAppointment() {
   const navigate = useNavigate();
@@ -27,13 +32,51 @@ export default function BookAppointment() {
   const patientId = patientData?.data?._id;
 
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: doctorData } = useGetDoctorsQuery({ search: searchTerm });
+  const [selectedDept, setSelectedDept] = useState("");
+  const [selectedSpec, setSelectedSpec] = useState("");
+  const [filterDate, setFilterDate] = useState("");
+
+  // Initialize from query params
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const qSearch = params.get('search');
+    const qDept = params.get('department');
+    const qDate = params.get('availableDate');
+
+    if (qSearch) setSearchTerm(qSearch);
+    if (qDept) setSelectedDept(qDept);
+    if (qDate) setFilterDate(qDate);
+  }, [location.search]);
+
+  const { data: deptData } = useGetDepartmentsQuery({ limit: 100 });
+  const { data: doctorData } = useGetDoctorsQuery({ 
+    search: searchTerm, 
+    department: selectedDept, 
+    specialization: selectedSpec,
+    availableDate: filterDate
+  });
 
   const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
   const [appointmentDate, setAppointmentDate] = useState("");
   const [timeSlot, setTimeSlot] = useState("");
   const [symptoms, setSymptoms] = useState("");
   const [consultationType, setConsultationType] = useState<"IN_PERSON" | "TELEMEDICINE">("IN_PERSON");
+
+  // Extract unique specializations for the filter
+  const specializations = useMemo(() => {
+    const specs = new Set<string>();
+    doctorData?.data?.forEach((d: any) => {
+      if (d.specialization) specs.add(d.specialization);
+    });
+    return Array.from(specs);
+  }, [doctorData]);
+
+  const handleDoctorSelect = (doctor: any) => {
+     setSelectedDoctor(doctor);
+     if (filterDate && !appointmentDate) {
+       setAppointmentDate(filterDate);
+     }
+  };
 
   const { data: bookedData, isFetching: isCheckingBooked } = useGetAppointmentsQuery(
     { doctorId: selectedDoctor?._id, date: appointmentDate },
@@ -43,6 +86,7 @@ export default function BookAppointment() {
   const [createCheckout, { isLoading: isRedirecting }] = useCreateCheckoutSessionMutation();
 
   const doctors = doctorData?.data || [];
+  const departments = deptData?.data || [];
   const bookedSlots = bookedData?.data?.map((a: any) => a.timeSlot) || [];
 
   const doctorDayInfo = useMemo(() => {
@@ -111,6 +155,13 @@ export default function BookAppointment() {
     }
   };
 
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedDept("");
+    setSelectedSpec("");
+    setFilterDate("");
+  };
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-7xl">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-700">
@@ -136,27 +187,83 @@ export default function BookAppointment() {
           <div className="bg-white p-8 lg:p-10 rounded-[3rem] border border-slate-100 shadow-2xl shadow-slate-200/40 space-y-10 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-600 to-indigo-600" />
 
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div>
-                <h2 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-                  <Stethoscope size={28} className="text-blue-500" /> Specialist Directory
-                </h2>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Select a doctor to view their schedule</p>
+            <div className="flex flex-col gap-8">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                    <Stethoscope size={28} className="text-blue-500" /> Specialist Directory
+                  </h2>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Select a doctor to view their schedule</p>
+                </div>
+                {(searchTerm || selectedDept || selectedSpec || filterDate) && (
+                   <button onClick={clearFilters} className="text-[10px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-2 hover:bg-rose-50 px-4 py-2 rounded-full transition-colors">
+                     <X size={14} /> Clear Filters
+                   </button>
+                )}
               </div>
-              <input
-                type="text"
-                placeholder="Search specialists..."
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="w-full md:w-[350px] p-5 bg-slate-50 border-none rounded-[2rem] font-bold text-slate-700 placeholder:text-slate-300 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all"
-              />
+
+              {/* Advanced Filter Bar */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-6 bg-slate-50/50 rounded-[2.5rem] border border-slate-50">
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Search Name</label>
+                  <div className="relative">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                    <input
+                      type="text"
+                      placeholder="Doctor name..."
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                      className="w-full pl-14 p-4 bg-white border-none rounded-2xl font-bold text-slate-700 placeholder:text-slate-300 focus:ring-2 focus:ring-blue-100 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Department</label>
+                  <select
+                    value={selectedDept}
+                    onChange={e => setSelectedDept(e.target.value)}
+                    className="w-full p-4 bg-white border-none rounded-2xl font-bold text-slate-700 focus:ring-2 focus:ring-blue-100 transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="">All Departments</option>
+                    {departments.map((dept: any) => (
+                      <option key={dept._id} value={dept._id}>{dept.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Specialization</label>
+                  <select
+                    value={selectedSpec}
+                    onChange={e => setSelectedSpec(e.target.value)}
+                    className="w-full p-4 bg-white border-none rounded-2xl font-bold text-slate-700 focus:ring-2 focus:ring-blue-100 transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="">All Specializations</option>
+                    {specializations.map((spec: any) => (
+                      <option key={spec} value={spec}>{spec}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-4">Available Date</label>
+                  <input
+                    type="date"
+                    min={dayjs().format('YYYY-MM-DD')}
+                    value={filterDate}
+                    onChange={e => setFilterDate(e.target.value)}
+                    className="w-full p-4 bg-white border-none rounded-2xl font-bold text-slate-700 focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {doctors.map((doctor: any) => (
                 <div
                   key={doctor._id}
-                  onClick={() => setSelectedDoctor(doctor)}
+                  onClick={() => handleDoctorSelect(doctor)}
                   className={`p-6 rounded-[2.5rem] border-2 cursor-pointer transition-all duration-300 group flex flex-col gap-4 ${selectedDoctor?._id === doctor._id
                     ? "border-blue-500 bg-blue-50/50 shadow-xl shadow-blue-100/30"
                     : "border-slate-50 hover:border-blue-200 hover:bg-slate-50"

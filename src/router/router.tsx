@@ -4,6 +4,8 @@ import HomePage from "../PublicPage/Home/HomePage";
 import Login from "../PublicPage/Auth/Login";
 import Register from "../PublicPage/Auth/Register";
 import ProtectedRoute from "../shared_components/ProtectedRoute";
+import PublicPrescription from "../pages/public/PublicPrescription";
+import ForgotPassword from "../PublicPage/Auth/ForgotPassword";
 
 import ClinicLayout from "../cliniclayout/ClinicLayout";
 import ClinicOverview from "../cliniclayout/ClinicOverview";
@@ -43,6 +45,7 @@ export const router = createBrowserRouter([
     children: [
       { path: "/", element: <HomePage /> },
       { path: "appointment", element: <BookAppointment /> },
+      { path: "public/prescriptions/:patientId", element: <PublicPrescription /> },
     ],
   },
   {
@@ -52,6 +55,10 @@ export const router = createBrowserRouter([
   {
     path: "/register",
     element: <Register />
+  },
+  {
+    path: "/forgot-password",
+    element: <ForgotPassword />
   },
   {
     path: "/unauthorized",

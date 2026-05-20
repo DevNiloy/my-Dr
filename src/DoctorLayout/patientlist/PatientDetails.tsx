@@ -14,55 +14,39 @@ import {
   ClipboardList,
   Loader2,
   X,
-  Upload
+  Stethoscope,
+  Pill,
+//   ShieldCheck
 } from 'lucide-react';
 import { useGetPatientByIdQuery } from '../../redux/api/patientApi';
 import { useGetReportsQuery } from '../../redux/api/reportApi';
-import { useGetPatientPrescriptionsQuery, useCreatePrescriptionMutation } from '../../redux/api/prescriptionApi';
-import { toast } from 'react-toastify';
+import { useGetPatientPrescriptionsQuery } from '../../redux/api/prescriptionApi';
+import { useGetDoctorMeQuery } from '../../redux/api/doctorApi';
 import dayjs from 'dayjs';
+import PrescriptionModal from '../../cliniclayout/PrescriptionModal';
+import ViewPrescriptionModal from '../../shared_components/ViewPrescriptionModal';
 
 export default function PatientDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
+  const [isViewPrescriptionModalOpen, setIsViewPrescriptionModalOpen] = useState(false);
   
   // Queries
   const { data: patientData, isLoading: isPatientLoading } = useGetPatientByIdQuery(id!);
   const { data: reportsData } = useGetReportsQuery({ patientId: id });
   const { data: prescriptionsData, isLoading: isPrescriptionsLoading } = useGetPatientPrescriptionsQuery(id!);
-  const [createPrescription, { isLoading: isCreating }] = useCreatePrescriptionMutation();
+  const { data: doctorMeData } = useGetDoctorMeQuery({});
 
   const patient = patientData?.data;
   const reports = reportsData?.data || [];
   const prescriptions = prescriptionsData?.data || [];
+  const doctorMe = doctorMeData?.data;
 
-  // Prescription Form State
-  const [pTitle, setPTitle] = useState("");
-  const [pDescription, setPDescription] = useState("");
-  const [pFile, setPFile] = useState<File | null>(null);
-
-  const handleAddPrescription = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pTitle || !pDescription) {
-        return toast.error("Please fill title and description");
-    }
-
-    const formData = new FormData();
-    formData.append("patient", id!);
-    formData.append("title", pTitle);
-    formData.append("description", pDescription);
-    if (pFile) formData.append("file", pFile);
-
-    try {
-        await createPrescription(formData).unwrap();
-        toast.success("Prescription added successfully!");
-        setIsPrescriptionModalOpen(false);
-        setPTitle("");
-        setPDescription("");
-        setPFile(null);
-    } catch (err: any) {
-        toast.error(err?.data?.message || "Failed to add prescription");
+  const handleClosePrescriptionModal = (showPreview?: boolean) => {
+    setIsPrescriptionModalOpen(false);
+    if (showPreview) {
+      setIsViewPrescriptionModalOpen(true);
     }
   };
 
@@ -114,13 +98,20 @@ export default function PatientDetails() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
+            <button
+              onClick={() => setIsViewPrescriptionModalOpen(true)}
+              className="px-6 py-4 bg-white text-slate-700 border border-slate-200 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest flex items-center gap-3 hover:bg-slate-50 transition-all shadow-sm"
+            >
+              <FileText size={18} />
+              Browse Records
+            </button>
             <button
               onClick={() => setIsPrescriptionModalOpen(true)}
               className="px-6 py-4 bg-blue-600 text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest flex items-center gap-3 hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
             >
               <Plus size={18} strokeWidth={3} />
-              Add New Prescription
+              Issue New Rx
             </button>
         </div>
       </div>
@@ -230,32 +221,60 @@ export default function PatientDetails() {
                     <span className="text-xs font-black text-slate-300 uppercase tracking-widest">{prescriptions.length} Records</span>
                 </div>
                 
-                <div className="p-4 space-y-4">
+                <div className="p-6 space-y-6">
                     {isPrescriptionsLoading ? (
                         <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-emerald-500" /></div>
                     ) : prescriptions.length > 0 ? (
                         prescriptions.map((px: any) => (
-                            <div key={px._id} className="p-6 bg-slate-50/50 rounded-3xl border border-transparent hover:border-emerald-100 hover:bg-white transition-all group">
-                                <div className="flex items-start justify-between mb-4">
+                            <div key={px._id} className="p-8 bg-slate-50/50 rounded-[2rem] border border-slate-100 hover:border-emerald-200 hover:bg-white transition-all group">
+                                <div className="flex items-start justify-between mb-6">
                                     <div>
-                                        <h4 className="font-black text-slate-800 text-lg group-hover:text-emerald-600 transition-colors uppercase tracking-tight">{px.title}</h4>
-                                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mt-1">{dayjs(px.createdAt).format('DD MMMM YYYY • hh:mm A')}</p>
+                                        <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">
+                                          <CalendarIcon size={12} />
+                                          {dayjs(px.createdAt).format('DD MMMM YYYY')}
+                                        </div>
+                                        <h4 className="font-black text-slate-800 text-xl group-hover:text-emerald-600 transition-colors tracking-tight">Prescription #{px._id.slice(-6).toUpperCase()}</h4>
                                     </div>
-                                    {px.fileUrl && (
-                                        <a href={px.fileUrl} target="_blank" className="p-3 bg-white text-emerald-600 rounded-2xl shadow-sm hover:scale-110 transition-transform">
-                                            <ExternalLink size={18} />
-                                        </a>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                       <button 
+                                          onClick={() => setIsViewPrescriptionModalOpen(true)}
+                                          className="p-3 bg-white text-emerald-600 rounded-[1.2rem] shadow-sm hover:scale-110 transition-transform border border-emerald-50"
+                                       >
+                                          <ExternalLink size={18} />
+                                       </button>
+                                    </div>
                                 </div>
-                                <p className="text-sm text-slate-600 font-medium leading-relaxed bg-white/50 p-4 rounded-2xl border border-slate-100 italic">
-                                    "{px.description}"
-                                </p>
+
+                                <div className="space-y-4">
+                                  <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm shadow-slate-100/50">
+                                    <h5 className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                                      <Stethoscope size={14} className="text-emerald-500" /> Diagnosis
+                                    </h5>
+                                    <p className="text-sm text-slate-700 font-bold italic line-clamp-2">"{px.diagnosis}"</p>
+                                  </div>
+
+                                  {px.medicines && px.medicines.length > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                      {px.medicines.slice(0, 3).map((med: any, i: number) => (
+                                        <span key={i} className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase border border-emerald-100 flex items-center gap-1.5 shadow-sm">
+                                          <Pill size={12} />
+                                          {med.name}
+                                        </span>
+                                      ))}
+                                      {px.medicines.length > 3 && (
+                                        <span className="px-4 py-2 bg-slate-100 text-slate-500 rounded-full text-[10px] font-black uppercase border border-slate-200">
+                                          +{px.medicines.length - 3} More
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                             </div>
                         ))
                     ) : (
-                        <div className="py-12 flex flex-col items-center justify-center text-slate-300">
-                            <ClipboardList size={40} className="mb-4 opacity-30" />
-                            <p className="font-black text-[10px] uppercase tracking-widest">No previous prescriptions</p>
+                        <div className="py-12 flex flex-col items-center justify-center text-slate-300 grayscale opacity-40">
+                            <ClipboardList size={40} className="mb-4" />
+                            <p className="font-black text-[10px] uppercase tracking-widest">No previous prescriptions recorded</p>
                         </div>
                     )}
                 </div>
@@ -273,7 +292,7 @@ export default function PatientDetails() {
                 
                 <div className="overflow-x-auto">
                     <table className="w-full">
-                        <thead className="bg-slate-50/50">
+                        <thead className="bg-slate-50/50 border-b border-slate-100">
                             <tr>
                                 <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Test Name</th>
                                 <th className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
@@ -285,14 +304,14 @@ export default function PatientDetails() {
                                 <tr key={report._id} className="hover:bg-blue-50/50 transition-colors group">
                                     <td className="px-8 py-6">
                                         <p className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors uppercase tracking-tight text-sm">{report.testName}</p>
-                                        <p className="text-[10px] text-slate-400 font-medium truncate max-w-[200px]">{report.summary || 'No summary available'}</p>
+                                        <p className="text-[10px] text-slate-400 font-medium truncate max-w-[200px] mt-0.5">{report.summary || 'No summary available'}</p>
                                     </td>
                                     <td className="px-8 py-6 text-sm font-bold text-slate-500">
                                         {dayjs(report.createdAt).format('DD MMM, YYYY')}
                                     </td>
                                     <td className="px-8 py-6 text-right">
-                                        <a href={report.fileUrl} target="_blank" className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-black hover:bg-blue-600 hover:text-white transition-all">
-                                            <ExternalLink size={14} /> View
+                                        <a href={report.fileUrl} target="_blank" className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-50 text-blue-600 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-blue-100">
+                                            <ExternalLink size={14} /> View Report
                                         </a>
                                     </td>
                                 </tr>
@@ -300,8 +319,8 @@ export default function PatientDetails() {
                         </tbody>
                     </table>
                     {reports.length === 0 && (
-                        <div className="py-20 flex flex-col items-center justify-center text-slate-200">
-                            <FileText size={48} />
+                        <div className="py-20 flex flex-col items-center justify-center text-slate-200 grayscale opacity-30">
+                            <FileCheck size={48} />
                             <p className="mt-4 font-black text-[10px] uppercase tracking-widest">No clinical reports uploaded</p>
                         </div>
                     )}
@@ -310,78 +329,29 @@ export default function PatientDetails() {
         </div>
       </div>
 
-      {/* ADD PRESCRIPTION MODAL */}
-      {isPrescriptionModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsPrescriptionModalOpen(false)} />
-              <form onSubmit={handleAddPrescription} className="relative w-full max-w-xl bg-white rounded-[3rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                  <div className="p-8 border-b border-slate-50 flex items-center justify-between">
-                      <h3 className="text-xl font-black text-slate-800">Add New Prescription</h3>
-                      <button onClick={() => setIsPrescriptionModalOpen(false)} className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:text-rose-500 transition-colors">
-                          <X size={20} />
-                      </button>
-                  </div>
-                  
-                  <div className="p-8 space-y-6">
-                      <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Prescription Title</label>
-                          <input 
-                            type="text" 
-                            placeholder="e.g. Daily Medication Plan"
-                            value={pTitle}
-                            onChange={(e) => setPTitle(e.target.value)}
-                            className="w-full p-4 bg-slate-50 border-none rounded-2xl font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                          />
-                      </div>
+      {/* NEW PREMIUM PRESCRIPTION MODAL */}
+      {isPrescriptionModalOpen && doctorMe && (
+        <PrescriptionModal 
+          isOpen={isPrescriptionModalOpen}
+          onClose={handleClosePrescriptionModal}
+          appointmentData={{
+            _id: "DIRECT_ISSUE", 
+            patientId: id!,
+            doctorId: doctorMe._id,
+            patientName: `${patient.firstName} ${patient.lastName}`,
+            doctorName: `${doctorMe.firstName} ${doctorMe.lastName}`
+          }}
+        />
+      )}
 
-                      <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Detailed Description / Instructions</label>
-                          <textarea 
-                            rows={4}
-                            placeholder="Provide details about dosage, timing, and other instructions..."
-                            value={pDescription}
-                            onChange={(e) => setPDescription(e.target.value)}
-                            className="w-full p-6 bg-slate-50 border-none rounded-2xl font-medium text-slate-600 outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none"
-                          />
-                      </div>
-
-                      <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Prescription File (PDF/Image)</label>
-                          <div className="relative group">
-                              <input 
-                                type="file" 
-                                onChange={(e) => setPFile(e.target.files?.[0] || null)}
-                                className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                              />
-                              <div className="w-full p-8 border-2 border-dashed border-slate-100 rounded-[2rem] flex flex-col items-center justify-center text-slate-400 group-hover:border-blue-400 group-hover:bg-blue-50 transition-all">
-                                  <Upload size={32} className="mb-3 group-hover:scale-110 transition-transform" />
-                                  <p className="text-xs font-black uppercase tracking-widest">
-                                      {pFile ? pFile.name : "Drag & Drop or click to upload file"}
-                                  </p>
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-
-                  <div className="p-8 bg-slate-50 flex items-center justify-end gap-4">
-                        <button 
-                            type="button" 
-                            onClick={() => setIsPrescriptionModalOpen(false)}
-                            className="px-6 py-4 text-slate-400 font-black text-[10px] uppercase tracking-widest"
-                        >
-                            Cancel
-                        </button>
-                        <button 
-                            disabled={isCreating}
-                            type="submit"
-                            className="px-8 py-4 bg-emerald-600 text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest flex items-center gap-3 hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 disabled:opacity-50"
-                        >
-                            {isCreating ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} strokeWidth={3} />}
-                            Save Prescription
-                        </button>
-                  </div>
-              </form>
-          </div>
+      {/* VIEW MODAL (For Review/PDF) */}
+      {isViewPrescriptionModalOpen && (
+        <ViewPrescriptionModal 
+          isOpen={isViewPrescriptionModalOpen}
+          onClose={() => setIsViewPrescriptionModalOpen(false)}
+          patientId={id!}
+          showDownload={false}
+        />
       )}
     </div>
   );

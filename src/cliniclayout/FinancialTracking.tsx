@@ -3,7 +3,7 @@ import {
   ArrowDownLeft,
   Search,
   Download,
-  CreditCard,
+  // CreditCard,
   History,
   TrendingUp,
   Monitor,
@@ -93,13 +93,13 @@ const FinancialTracking: React.FC = () => {
             icon={<TrendingUp className="text-[#0EA5E9]" size={22} />}
             bg="bg-sky-50"
           />
-          <FinanceCard
+          {/* <FinanceCard
             title="Pending Settlement"
             amount={formatAmount(summary?.pendingSettlement || 0)}
             desc={`${summary?.totalPendingAppointments || 0} pending appointments`}
             icon={<CreditCard className="text-amber-500" size={22} />}
             bg="bg-amber-50"
-          />
+          /> */}
         </div>
       )}
 

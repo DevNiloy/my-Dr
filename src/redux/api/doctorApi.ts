@@ -4,10 +4,16 @@ export const doctorApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getDoctors: builder.query({
       query: (params: any) => {
-        const p = (params && typeof params === 'object') ? params : {};
-        const { search = '', page = 1, limit = 10, department = '' } = p;
+        const queryParams = new URLSearchParams();
+        if (params?.search) queryParams.append('search', params.search);
+        if (params?.page) queryParams.append('page', params.page);
+        if (params?.limit) queryParams.append('limit', params.limit);
+        if (params?.department) queryParams.append('department', params.department);
+        if (params?.specialization) queryParams.append('specialization', params.specialization);
+        if (params?.availableDate) queryParams.append('availableDate', params.availableDate);
+
         return {
-          url: `/doctors?search=${search}&page=${page}&limit=${limit}&department=${department}`,
+          url: `/doctors?${queryParams.toString()}`,
           method: 'GET',
         };
       },

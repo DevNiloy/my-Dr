@@ -5,11 +5,33 @@ import {
   CalendarDaysIcon, 
   ArrowRightCircleIcon 
 } from '@heroicons/react/24/outline';
+import { useNavigate } from 'react-router-dom';
+import { useGetDepartmentsQuery } from '../../../redux/api/departmentApi';
+import dayjs from 'dayjs';
 
 const Hero: React.FC = () => {
+  const navigate = useNavigate();
   // States for Tabs and Form
   const [activeTab, setActiveTab] = useState<'e-visit' | 'stationary'>('e-visit');
   const [isPrivate, setIsPrivate] = useState(true);
+
+  // Search States
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDept, setSelectedDept] = useState("");
+  const [filterDate, setFilterDate] = useState("");
+
+  const { data: deptData } = useGetDepartmentsQuery({ limit: 100 });
+  const departments = deptData?.data || [];
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (searchTerm) params.append('search', searchTerm);
+    if (selectedDept) params.append('department', selectedDept);
+    if (filterDate) params.append('availableDate', filterDate);
+    
+    navigate(`/appointment?${params.toString()}`);
+  };
 
   return (
     <section className="relative min-h-[600px] bg-[#3B82F6] flex items-center justify-center p-6 lg:p-20 overflow-hidden">
@@ -39,16 +61,15 @@ const Hero: React.FC = () => {
             </h3>
             
             <div className="mt-auto w-full space-y-3 pb-10">
-              <input className="w-full bg-white/20 rounded-md py-2 px-4 placeholder-white/70 outline-none border border-white/30" placeholder="Login" />
-              <input className="w-full bg-white/20 rounded-md py-2 px-4 placeholder-white/70 outline-none border border-white/30" type="password" placeholder="Haslo" />
-              <button className="w-full bg-blue-500 py-2 rounded-md font-bold text-sm shadow-lg">ZALOGUJ SIĘ</button>
-              <button className="w-full bg-pink-500 py-2 rounded-md font-bold text-sm shadow-lg">ZAREJESTRUJ SIĘ</button>
+              <input className="w-full bg-white/20 rounded-md py-2 px-4 placeholder-white/70 outline-none border border-white/30 text-sm" placeholder="Login" />
+              <input className="w-full bg-white/20 rounded-md py-2 px-4 placeholder-white/70 outline-none border border-white/30 text-sm" type="password" placeholder="Haslo" />
+              <button onClick={() => navigate("/login")} className="w-full bg-blue-500 py-2 rounded-md font-bold text-sm shadow-lg hover:bg-blue-600 transition-all">SIGN IN</button>
+              <button onClick={() => navigate("/register")} className="w-full bg-pink-500 py-2 rounded-md font-bold text-sm shadow-lg hover:bg-pink-600 transition-all">REGISTER</button>
             </div>
           </div>
 
           {/* Character Illustration Placeholder (Positioned) */}
           <div className="hidden md:block absolute -bottom-10 -right-20">
-             {/* Note: Use your doctor/patient PNG images here */}
              <div className="w-[300px] h-[300px] bg-contain bg-no-repeat bg-bottom opacity-90" style={{backgroundImage: 'url("doctor_patient_illustration.png")'}}></div>
           </div>
         </div>
@@ -75,28 +96,34 @@ const Hero: React.FC = () => {
           {/* Main Form Container */}
           <div className="bg-white/20 backdrop-blur-lg border border-white/30 rounded-3xl lg:rounded-tl-none p-8 lg:p-12 shadow-2xl relative">
             
-            <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+            <form className="space-y-6" onSubmit={handleSearch}>
               
               {/* Specialty Select */}
               <div className="relative group">
                 <UserCircleIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-white/80" />
-                <select className="w-full bg-white text-gray-700 rounded-full py-3 pl-12 pr-6 appearance-none focus:ring-4 focus:ring-blue-300 outline-none transition-all">
-                  <option>Select specialty / doctor</option>
-                  <option>Cardiologist</option>
-                  <option>Dermatologist</option>
-                </select>
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
+                <input 
+                  type="text"
+                  placeholder="Select specialty / doctor"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-white text-gray-700 rounded-full py-4 pl-12 pr-6 appearance-none focus:ring-4 focus:ring-blue-300 outline-none transition-all font-medium placeholder:text-gray-400"
+                />
               </div>
 
-              {/* City Select */}
+              {/* Department Select (City placeholder replaced with Department) */}
               <div className="relative">
                 <MapPinIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-white/80" />
-                <select className="w-full bg-white text-gray-700 rounded-full py-3 pl-12 pr-6 appearance-none focus:ring-4 focus:ring-blue-300 outline-none transition-all">
-                  <option>Select city</option>
-                  <option>Dhaka</option>
-                  <option>Chittagong</option>
+                <select 
+                  value={selectedDept}
+                  onChange={(e) => setSelectedDept(e.target.value)}
+                  className="w-full bg-white text-gray-700 rounded-full py-4 pl-12 pr-6 appearance-none focus:ring-4 focus:ring-blue-300 outline-none transition-all font-medium cursor-pointer"
+                >
+                  <option value="">Select department</option>
+                  {departments.map((dept: any) => (
+                    <option key={dept._id} value={dept._id}>{dept.name}</option>
+                  ))}
                 </select>
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">▼</div>
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">▼</div>
               </div>
 
               <div className="flex flex-col md:flex-row gap-6 items-center">
@@ -105,19 +132,22 @@ const Hero: React.FC = () => {
                   <CalendarDaysIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-white/80" />
                   <input 
                     type="date" 
-                    defaultValue="2026-03-28"
-                    className="w-full bg-white text-gray-700 rounded-full py-3 pl-12 pr-6 focus:ring-4 focus:ring-blue-300 outline-none"
+                    min={dayjs().format('YYYY-MM-DD')}
+                    value={filterDate}
+                    onChange={(e) => setFilterDate(e.target.value)}
+                    className="w-full bg-white text-gray-700 rounded-full py-4 pl-12 pr-6 focus:ring-4 focus:ring-blue-300 outline-none font-medium cursor-pointer"
                   />
                 </div>
 
                 {/* Toggle Switch (Private/NFZ) */}
-                <div className="flex items-center gap-3 text-white font-bold">
+                <div className="flex items-center gap-3 text-white font-black text-sm uppercase tracking-wider">
                   <span className={isPrivate ? 'opacity-100' : 'opacity-50'}>Private</span>
                   <button 
+                    type="button"
                     onClick={() => setIsPrivate(!isPrivate)}
                     className="w-14 h-7 bg-white/30 rounded-full relative p-1 transition-all"
                   >
-                    <div className={`w-5 h-5 bg-pink-500 rounded-full transition-all transform ${!isPrivate ? 'translate-x-7' : 'translate-x-0'}`}></div>
+                    <div className={`w-5 h-5 bg-pink-500 rounded-full transition-all transform ${!isPrivate ? 'translate-x-7' : 'translate-x-0'} shadow-sm`}></div>
                   </button>
                   <span className={!isPrivate ? 'opacity-100' : 'opacity-50'}>NFZ</span>
                 </div>
@@ -125,7 +155,7 @@ const Hero: React.FC = () => {
 
               {/* Search Button */}
               <div className="flex justify-end pt-4">
-                <button className="bg-pink-500 hover:bg-pink-600 text-white flex items-center gap-3 px-8 py-3 rounded-full font-bold text-lg shadow-xl transition-all transform hover:scale-105 active:scale-95">
+                <button type="submit" className="bg-pink-500 hover:bg-pink-600 text-white flex items-center gap-3 px-10 py-4 rounded-full font-black text-lg shadow-xl shadow-pink-500/20 transition-all transform hover:scale-105 active:scale-95 uppercase tracking-tight">
                   SEARCH FOR VISITS
                   <ArrowRightCircleIcon className="h-7 w-7" />
                 </button>
@@ -140,4 +170,4 @@ const Hero: React.FC = () => {
   );
 };
 
-export default Hero ;
+export default Hero;

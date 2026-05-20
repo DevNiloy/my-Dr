@@ -8,13 +8,14 @@ import {
   Loader2,
   Eye,
   Video,
-  XCircle,
   X,
   CheckCircle2,
-  AlertCircle
+  FileText
 } from "lucide-react";
 import dayjs from "dayjs";
 import { useGetDoctorAppointmentsQuery } from "../../redux/api/appointmentApi";
+import PrescriptionModal from "../../cliniclayout/PrescriptionModal";
+import ViewPrescriptionModal from "../../shared_components/ViewPrescriptionModal";
 
 const DoctorAppointment: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("ALL"); // today, upcoming, cancelled, ALL
@@ -22,6 +23,9 @@ const DoctorAppointment: React.FC = () => {
   const [page, setPage] = useState(1);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
+  const [isViewPrescriptionModalOpen, setIsViewPrescriptionModalOpen] = useState(false);
+  const [prescriptionData, setPrescriptionData] = useState<any>(null);
   const limit = 10;
 
   const { data, isLoading, isFetching } = useGetDoctorAppointmentsQuery({
@@ -40,6 +44,24 @@ const DoctorAppointment: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const handleOpenPrescription = (app: any) => {
+    setPrescriptionData({
+      _id: app._id,
+      patientId: app.patient?._id,
+      doctorId: app.doctor?._id,
+      patientName: `${app.patient?.firstName || ""} ${app.patient?.lastName || ""}`.trim(),
+      doctorName: `${app.doctor?.firstName || ""} ${app.doctor?.lastName || ""}`.trim()
+    });
+    setIsPrescriptionModalOpen(true);
+  };
+
+  const handleClosePrescriptionModal = (showPreview?: boolean) => {
+    setIsPrescriptionModalOpen(false);
+    if (showPreview) {
+      setIsViewPrescriptionModalOpen(true);
+    }
+  };
+
   const tabs = [
     { label: "Today", value: "today" },
     { label: "Upcoming", value: "upcoming" },
@@ -52,7 +74,7 @@ const DoctorAppointment: React.FC = () => {
       
       {/* Header & Tabs */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-        <div>
+        <div border-l-4 border-blue-600 pl-4>
           <h1 className="text-2xl lg:text-3xl font-black text-slate-800 tracking-tight">Doctor Appointments</h1>
           <p className="text-sm text-slate-500 font-medium mt-1">Manage your consultations and patient records.</p>
         </div>
@@ -105,82 +127,92 @@ const DoctorAppointment: React.FC = () => {
                   <th className="px-8 py-5">Admin Status</th>
                   <th className="px-8 py-5">Telemedicine</th>
                   <th className="px-8 py-5 text-center">Actions</th>
+                  <th className="px-8 py-5 text-center">Rx</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {appointments.length > 0 ? appointments.map((app: any) => {
-                   const patientName = app.patient ? `${app.patient.firstName || ''} ${app.patient.lastName || ''}`.trim() : "Unknown Patient";
-                   const isAdminApproved = app.adminApprovalStatus === 'APPROVED';
+                {appointments.length > 0 ? (
+                  appointments.map((app: any) => {
+                    const patientName = app.patient ? `${app.patient.firstName || ''} ${app.patient.lastName || ''}`.trim() : "Unknown Patient";
 
-                   return (
-                  <tr key={app._id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-8 py-6">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-slate-800 text-sm">{patientName}</span>
-                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter mt-0.5">
-                          PID: #{app._id.slice(-6).toUpperCase()}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                      <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase px-3 py-1.5 rounded-xl border ${
-                        app.type === 'TELEMEDICINE' 
-                        ? 'bg-blue-50 text-blue-600 border-blue-100' 
-                        : 'bg-amber-50 text-amber-600 border-amber-100'
-                      }`}>
-                        {app.type === 'TELEMEDICINE' ? <Monitor size={12} /> : <MapPin size={12} />}
-                        {app.type === 'TELEMEDICINE' ? 'Online' : 'In Person'}
-                      </span>
-                    </td>
-                    <td className="px-8 py-6">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-black text-slate-700 flex items-center gap-1.5">
-                          <Clock size={14} className="text-[#0EA5E9]" /> {app.timeSlot}
-                        </span>
-                        <span className="text-[10px] text-slate-400 font-medium ml-5 mt-0.5">
-                           {dayjs(app.appointmentDate).format('DD MMM YYYY')}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-8 py-6">
-                       <div className={`inline-flex items-center gap-1.5 text-[9px] font-black uppercase px-3 py-1.5 rounded-xl ${
-                          isAdminApproved ? 'bg-emerald-50 text-emerald-600' : app.adminApprovalStatus === 'REJECTED' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'
-                       }`}>
-                          {isAdminApproved ? <CheckCircle2 size={12}/> : app.adminApprovalStatus === 'REJECTED' ? <XCircle size={12}/> : <AlertCircle size={12}/>}
-                          {app.adminApprovalStatus || 'PENDING'}
-                       </div>
-                    </td>
-                    <td className="px-8 py-6">
-                       {app.type === 'TELEMEDICINE' ? (
-                          isAdminApproved ? (
-                            <a 
-                               href={app.meetLink} 
-                               target="_blank" 
-                               rel="noopener noreferrer"
-                               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-black hover:bg-blue-700 transition-all shadow-md shadow-blue-100"
-                            >
-                               <Video size={14} /> Join Meeting
-                            </a>
-                          ) : (
-                            <span className="text-[10px] text-slate-400 font-bold italic">Waiting for Approval</span>
-                          )
-                       ) : (
-                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic opacity-50">In-Person</span>
-                       )}
-                    </td>
-                    <td className="px-8 py-6 text-center">
-                       <button 
-                          onClick={() => handleOpenDetails(app)}
-                          className="p-2.5 text-slate-400 hover:text-[#0EA5E9] hover:bg-sky-50 rounded-xl transition-all"
-                       >
-                          <Eye size={20} />
-                       </button>
-                    </td>
-                  </tr>
-                )}
+                    return (
+                      <tr key={app._id} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="px-8 py-6">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-slate-800 text-sm">{patientName}</span>
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter mt-0.5">
+                              PID: #{app._id.slice(-6).toUpperCase()}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6">
+                          <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase px-3 py-1.5 rounded-xl border ${
+                            app.type === 'TELEMEDICINE' 
+                            ? 'bg-blue-50 text-blue-600 border-blue-100' 
+                            : 'bg-amber-50 text-amber-600 border-amber-100'
+                          }`}>
+                            {app.type === 'TELEMEDICINE' ? <Monitor size={12} /> : <MapPin size={12} />}
+                            {app.type === 'TELEMEDICINE' ? 'Online' : 'In Person'}
+                          </span>
+                        </td>
+                        <td className="px-8 py-6">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-black text-slate-700 flex items-center gap-1.5">
+                              <Clock size={14} className="text-[#0EA5E9]" /> {app.timeSlot}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium ml-5 mt-0.5">
+                               {dayjs(app.appointmentDate).format('DD MMM YYYY')}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6">
+                           <div className={`inline-flex items-center gap-1.5 text-[9px] font-black uppercase px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-600`}>
+                              <CheckCircle2 size={12}/>
+                              Verified
+                           </div>
+                        </td>
+                        <td className="px-8 py-6">
+                            {app.type === 'TELEMEDICINE' ? (
+                              app.meetLink ? (
+                                <a 
+                                   href={app.meetLink} 
+                                   target="_blank" 
+                                   rel="noopener noreferrer"
+                                   className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-black hover:bg-blue-700 transition-all shadow-md shadow-blue-100"
+                                >
+                                   <Video size={14} /> Join Meeting
+                                </a>
+                              ) : (
+                                <span className="text-[10px] text-slate-400 font-bold italic">Link Pending</span>
+                              )
+                           ) : (
+                              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic opacity-50">In-Person</span>
+                           )}
+                        </td>
+                        <td className="px-8 py-6 text-center">
+                           <button 
+                              onClick={() => handleOpenDetails(app)}
+                              className="p-2.5 text-slate-400 hover:text-[#0EA5E9] hover:bg-sky-50 rounded-xl transition-all"
+                              title="View Details"
+                           >
+                              <Eye size={20} />
+                           </button>
+                        </td>
+                        <td className="px-8 py-6 text-center">
+                           <button 
+                              onClick={() => handleOpenPrescription(app)}
+                              className="p-2.5 text-blue-400 hover:text-white hover:bg-blue-600 rounded-xl transition-all shadow-sm"
+                              title="Issue Prescription"
+                           >
+                              <FileText size={18} />
+                           </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-8 py-20 text-center">
+                    <td colSpan={7} className="px-8 py-20 text-center">
                       <div className="flex flex-col items-center gap-3 opacity-20">
                         <Calendar size={48} />
                         <p className="text-lg font-black uppercase tracking-widest italic">No Appointments Found</p>
@@ -282,6 +314,23 @@ const DoctorAppointment: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {isPrescriptionModalOpen && prescriptionData && (
+        <PrescriptionModal 
+          isOpen={isPrescriptionModalOpen}
+          onClose={handleClosePrescriptionModal}
+          appointmentData={prescriptionData}
+        />
+      )}
+
+      {isViewPrescriptionModalOpen && prescriptionData && (
+        <ViewPrescriptionModal 
+          isOpen={isViewPrescriptionModalOpen}
+          onClose={() => setIsViewPrescriptionModalOpen(false)}
+          patientId={prescriptionData.patientId}
+          showDownload={false}
+        />
       )}
     </div>
   );
