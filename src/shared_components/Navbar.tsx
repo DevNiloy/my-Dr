@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Link, useNavigate } from "react-router-dom";
+// react-router-hash-link থেকে HashLink ইম্পোর্ট করা হয়েছে
+// @ts-ignore
+import { HashLink } from 'react-router-hash-link';
 import logo from "../../public/logo.png";
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
+  // href-এর শুরুতে '#' যোগ করা হয়েছে সঠিক সেকশন আইডি ট্র্যাক করার জন্য
   const navLinks = [
-    { name: "HOW IT WORKS", href: "#" },
-    { name: "ABOUT US", href: "#" },
-    { name: "MOBILE APP", href: "#" },
-    { name: "CLINIC ZONE", href: "#" },
+    { name: "HOW IT WORKS", href: "/#how-it-works" },
+    { name: "ABOUT US", href: "/#about-us" },
+    { name: "MOBILE APP", href: "/#mobile-app" },
   ];
 
   return (
@@ -22,12 +25,6 @@ const Navbar = () => {
           to="/"
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          {/* <div className="w-10 h-10 border-2 border-white rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">MyDr</span>
-          </div>
-          <span className="text-white font-bold text-xl italic tracking-tight">
-            MyDr
-          </span> */}
           <div className="border rounded-2xl border-white bg-white">
             <img src={logo} alt="" className="w-54 h-16" />
           </div>
@@ -36,13 +33,14 @@ const Navbar = () => {
         {/* Desktop Menu */}
         <div className="hidden lg:flex items-center gap-8">
           {navLinks.map((link) => (
-            <a
+            <HashLink
+              smooth // এই অ্যাট্রিবিউটটি স্ক্রলিং স্মুথ করবে
               key={link.name}
-              href={link.href}
+              to={link.href} // 'href' এর বদলে এখানে 'to' ব্যবহার হয়
               className="text-white text-xs font-bold hover:text-blue-100 transition-colors"
             >
               {link.name}
-            </a>
+            </HashLink>
           ))}
         </div>
 
@@ -55,7 +53,7 @@ const Navbar = () => {
             SIGN IN
           </Link>
 
-          {/* Static Country Flag (No Dropdown) */}
+          {/* Static Country Flag */}
           <div className="w-9 h-9 rounded-full border-2 border-white overflow-hidden flex items-center justify-center bg-white">
             <img
               src="https://flagcdn.com/gb.svg"
@@ -84,13 +82,15 @@ const Navbar = () => {
       {mobileMenuOpen && (
         <div className="lg:hidden mt-4 pb-4 space-y-4">
           {navLinks.map((link) => (
-            <a
+            <HashLink
+              smooth
               key={link.name}
-              href={link.href}
+              to={link.href}
+              onClick={() => setMobileMenuOpen(false)} // লিংকে ক্লিক করলে মোবাইল মেনু বন্ধ হয়ে যাবে
               className="block text-white font-bold text-sm"
             >
               {link.name}
-            </a>
+            </HashLink>
           ))}
           <div className="pt-4 border-t border-blue-400 flex flex-col gap-4">
             <button

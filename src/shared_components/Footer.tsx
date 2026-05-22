@@ -1,5 +1,5 @@
 import React from "react";
-
+import logo from '../../public/logo.png'
 const Footer: React.FC = () => {
   return (
     <footer className="bg-[#3B82F6] text-white py-12 px-6 lg:px-20">
@@ -9,7 +9,7 @@ const Footer: React.FC = () => {
           <div className="space-y-6">
             <div className="flex items-center gap-2">
               {/* MyDr Logo */}
-              <div className="w-10 h-10 border-2 border-white rounded-full flex items-center justify-center p-1">
+              {/* <div className="w-10 h-10 border-2 border-white rounded-full flex items-center justify-center p-1">
                 <img
                   src="/logo-white-stetho.svg"
                   alt="MyDr"
@@ -18,7 +18,10 @@ const Footer: React.FC = () => {
               </div>
               <span className="text-3xl font-bold italic tracking-tighter">
                 MyDr
-              </span>
+              </span> */}
+              <div className="border rounded-2xl border-white bg-white">
+                          <img src={logo} alt="" className="w-54 h-16" />
+                        </div>
             </div>
 
             <div className="flex items-center gap-3 group cursor-pointer">
@@ -39,20 +42,20 @@ const Footer: React.FC = () => {
                 </svg>
               </div>
               <a
-                href="mailto:kontakt@mydr.pl"
+                href="mailto:arkadiuszgalka@protonmail.com"
                 className="hover:underline font-medium"
               >
-                kontakt@mydr.pl
+                arkadiuszgalka@protonmail.com
               </a>
             </div>
 
-            <p className="hover:underline cursor-pointer opacity-90 transition hover:opacity-100">
+            {/* <p className="hover:underline cursor-pointer opacity-90 transition hover:opacity-100">
               Polityka prywatności
-            </p>
+            </p> */}
           </div>
 
           {/* Column 2: Empty Spacer for matching layout */}
-          <div className="hidden lg:block"></div>
+          <div className="hidden lg:block"></div><p></p>
 
           {/* Column 3: For Doctors */}
           <div className="space-y-6">
@@ -65,7 +68,7 @@ const Footer: React.FC = () => {
                 for running a medical facility
               </p>
               {/* MyDr EDM Button */}
-              <button className="bg-white/95 text-blue-600 px-6 py-3 rounded-full flex items-center gap-2 shadow-lg hover:bg-white transition-all transform active:scale-95 group">
+              {/* <button className="bg-white/95 text-blue-600 px-6 py-3 rounded-full flex items-center gap-2 shadow-lg hover:bg-white transition-all transform active:scale-95 group">
                 <div className="w-6 h-6 border border-blue-400 rounded-full flex items-center justify-center p-0.5">
                   <img
                     src="/blue-stetho.svg"
@@ -76,7 +79,7 @@ const Footer: React.FC = () => {
                 <span className="font-bold italic">
                   MyDr<span className="text-blue-400">EDM</span>
                 </span>
-              </button>
+              </button> */}
             </div>
           </div>
 
@@ -97,7 +100,7 @@ const Footer: React.FC = () => {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-white/20 text-xs opacity-80 text-center md:text-left leading-loose">
-          Copyright © 2022 MyDr Sp. z o.o. ul. Puławska 465, 02-844 Warszawa
+          Copyright © 2022 PYTOMAT.PL 
         </div>
       </div>
     </footer>
