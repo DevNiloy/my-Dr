@@ -59,7 +59,7 @@ const ClinicLayout: React.FC = () => {
                 <Building2 size={22} />
               </div>
               <span className="text-xl font-black tracking-tight text-slate-800 uppercase italic">
-                Care<span className="text-blue-600">Sync</span>
+                PYTO<span className="text-blue-600">MART.PL</span>
               </span>
             </div>
             <button className="lg:hidden text-slate-400" onClick={() => setSidebarOpen(false)}>

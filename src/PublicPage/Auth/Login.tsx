@@ -5,7 +5,7 @@ import { useLoginMutation } from '../../redux/feature/auth/authApi';
 import { setCredentials } from '../../redux/feature/auth/authSlice';
 import { toast } from 'react-toastify';
 import { User, Lock } from 'lucide-react'; // Swapped Mail for User to match screenshot icon
-
+import logo from '../../../public/logo.png'
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -76,18 +76,10 @@ const Login: React.FC = () => {
         
         {/* Logo Section */}
         <div className="flex flex-col items-center mb-8 select-none">
-          <div className="relative w-16 h-16 flex items-center justify-center border-2 border-white rounded-full">
-            {/* Stethoscope Silhouette representation */}
-            <svg className="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.75">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12a7.5 7.5 0 0 0 15 0c0-1.2-.26-2.35-.73-3.4M8.25 10.5a3.75 3.75 0 1 1 7.5 0v3.75a3.75 3.75 0 1 1-7.5 0V10.5Z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75v-3.75" />
-              <circle cx="12" cy="10.5" r="1.5" fill="currentColor"/>
-            </svg>
-            <span className="absolute bottom-1 right-2 text-[8px] font-bold bg-white text-[#743eb8] rounded-full w-3 h-3 flex items-center justify-center">®</span>
-          </div>
-          <h1 className="text-white text-4xl font-normal tracking-wide italic mt-2 font-serif">
-            My<span className="font-bold not-italic ml-0.5">Dr</span>
-          </h1>
+          
+          <div className="border rounded-2xl border-white bg-white">
+                      <img src={logo} alt="" className="w-54 h-16" />
+                    </div>
         </div>
 
         {/* Input Form Fields */}
