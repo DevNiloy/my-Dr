@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Link, useNavigate } from "react-router-dom";
 // react-router-hash-link থেকে HashLink ইম্পোর্ট করা হয়েছে
-// @ts-ignore
+//@ts-ignore
 import { HashLink } from 'react-router-hash-link';
 import logo from "../../public/logo.png";
 
@@ -110,3 +110,5 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
+// updated
