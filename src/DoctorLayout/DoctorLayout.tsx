@@ -48,7 +48,7 @@ export default function DoctorLayout() {
              </div>
              <div>
                 <h1 className="text-lg font-black text-slate-800 leading-none">DoctorPanel</h1>
-                <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Medical Hub</p>
+                <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">PYTOMART.PL</p>
              </div>
           </div>
         </div>
